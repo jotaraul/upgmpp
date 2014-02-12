@@ -39,6 +39,11 @@ FILE(GLOB aux_srcs2 ${CMAKE_SOURCE_DIR}/src/*.h)
 SET(SRCS ${aux_srcs1} ${aux_srcs2})
 
 
+# Maybe this is redundant with the lines above...
+set( CMAKE_CXX_FLAGS "-pg")
+SET( CMAKE_EXE_LINKER_FLAGS  "-pg")
+
+
 # Enable GCC profiling (GCC only)
 # ===================================================
 IF(CMAKE_COMPILER_IS_GNUCXX)

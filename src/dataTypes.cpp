@@ -1,74 +1,84 @@
+
+/*---------------------------------------------------------------------------*
+ |                               UPGM++                                      |
+ |                   Undirected Graphical Models in C++                      |
+ |                                                                           |
+ |              Copyright (C) 2014 Jose Raul Ruiz Sarmiento                  |
+ |                 University of Malaga (jotaraul@uma.es)                    |
+ |                         University of Osnabruk                            |
+ |                                                                           |
+ |   This program is free software: you can redistribute it and/or modify    |
+ |   it under the terms of the GNU General Public License as published by    |
+ |   the Free Software Foundation, either version 3 of the License, or       |
+ |   (at your option) any later version.                                     |
+ |                                                                           |
+ |   This program is distributed in the hope that it will be useful,         |
+ |   but WITHOUT ANY WARRANTY; without even the implied warranty of          |
+ |   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the           |
+ |   GNU General Public License for more details.                            |
+ |   <http://www.gnu.org/licenses/>                                          |
+ |                                                                           |
+ *---------------------------------------------------------------------------*/
+
+
 #include "dataTypes.h"
 
-using namespace PGMplusplus;
+using namespace UPGMplusplus;
 using namespace std;
 
 
-size_t CNode::getMostProbableClass()
-{
-    size_t mp_class;
+/*------------------------------------------------------------------------------
 
-    double max_value = std::numeric_limits<double>::min();
+                              computePotentials
 
-    size_t N_classes = m_potentials.rows();
-
-    for ( size_t index = 0; index < N_classes; index++ )
-    {
-        if ( m_potentials[index] > max_value )
-        {
-            max_value = m_potentials[index];
-            mp_class = index;
-        }
-    }
-
-    return mp_class;
-}
-
-//----------------------------------------------------------------------------//
-//                                                                            //
-//                          computePotentials
-//                                                                            //
-//----------------------------------------------------------------------------//
+------------------------------------------------------------------------------*/
 
 void CGraph::computePotentials()
 {
-    // Algorithm steps:
+    // Method steps:
     //  1. Compute node potentials
-    //  2. Comput edge potentials
+    //  2. Compute edge potentials
 
     //
     //  1. Node potentials
     //
 
-    std::vector<CNode>::iterator it;       
+    std::vector<CNode>::iterator it;
+
+    //cout << "NODE POTENTIALS" << endl;
 
     for ( it = m_nodes.begin(); it != m_nodes.end(); it++ )
     {
         // Get the node type
-        size_t type = it->getType();
+        size_t type = it->getType().getID();
 
         // Compute the node potentials according to the node type and its
         // extracted features
-        Eigen::VectorXd potentials = m_nodeWeights[type] * it->getFeatures();
+        Eigen::VectorXd potentials = it->getType().getWeights() * it->getFeatures();
 
-        //std::cout << "Potentials: " << potentials << std::endl;
+        potentials = potentials.array().exp();
+
+        //std::cout << potentials << std::endl << "----------------" << std::endl;
 
         it->setPotentials( potentials );
 
     }
 
-    //std::DBL_MAX
+    //
     //  2. Edge potentials
     //
 
     std::vector<CEdge>::iterator it2;
 
+    //cout << "EDGE POTENTIALS" << endl;
+
     for ( it2 = m_edges.begin(); it2 != m_edges.end(); it2++ )
     {
         // Get the edge type, its extracted features and the number of them
-        size_t type = it2->getType();
+        size_t type = it2->getType().getID();
+
         Eigen::VectorXd v_feat = it2->getFeatures();
-        size_t num_feat = m_edgeWeights[type].size();
+        size_t num_feat = it2->getType().getWeights().size();
 
         // Compute the potential for each feature, and sum up them to obtain
         // the desired edge potential
@@ -78,9 +88,7 @@ void CGraph::computePotentials()
 
         for ( size_t feat = 0; feat < num_feat; feat++ )
         {
-            potentials_per_feat.at(feat) = m_edgeWeights[type][feat]*v_feat(feat);
-
-            //std::cout << "M_potentials: " << m_edgeWeights[type][feat] << std::endl;
+            potentials_per_feat.at(feat) = it2->getType().getWeights()[feat]*v_feat(feat);
 
             if ( !feat )
                 potentials = potentials_per_feat[feat];
@@ -88,20 +96,27 @@ void CGraph::computePotentials()
                 potentials += potentials_per_feat[feat];
         }
 
+        potentials = potentials.array().exp();
+
+
+        //std::cout <<  potentials << std::endl;
+        //cout << "=======================================" << endl;
+
         it2->setPotentials ( potentials );
     }
 
 }
 
 
-//----------------------------------------------------------------------------//
-//                                                                            //
-//                              decodeICM
-//                                                                            //
-//----------------------------------------------------------------------------//
+/*------------------------------------------------------------------------------
+
+                                decodeICM
+
+------------------------------------------------------------------------------*/
 
 void CGraph::decodeICM( std::vector<size_t> &results )
 {
+    cout << "Satarting ICM decoding..." << endl;
     // Intilize the results vector
     size_t N_nodes = m_nodes.size();
     results.clear();
@@ -109,17 +124,20 @@ void CGraph::decodeICM( std::vector<size_t> &results )
 
     // Choose as initial class for all the nodes their more probable class
     // according to the node potentials
+
+    cout << "Initial classes assignation" << endl;
     for ( size_t index = 0; index < N_nodes; index++ )
     {
         size_t nodeMAP;
         m_nodes[index].getPotentials().maxCoeff(&nodeMAP);
         results[index] = nodeMAP;
+        cout << nodeMAP << endl;
     }
 
     // Set the stop conditions
     bool keep_iterating = true;
 
-    m_TOptions.ICM_maxIterations = 1000;
+    m_TOptions.ICM_maxIterations = 100;
     size_t iteration = 0;
 
     // Let's go!
@@ -139,9 +157,15 @@ void CGraph::decodeICM( std::vector<size_t> &results )
             for ( size_t neighbor = 0; neighbor < N_neighbors; neighbor++ )
             {
                 size_t edgeID     = m_edges_f[index][neighbor];
-                size_t neighborID = m_edges[edgeID].getSecondNodeID();
 
+                size_t neighborID;
+                size_t ID1, ID2;
 
+                m_edges[edgeID].getNodesID(ID1,ID2);
+
+                ( ID1 == index ) ? neighborID = ID2 : neighborID = ID1;
+
+                cout << "Testing edge <" << index << "," << neighborID << ">" << endl;
                 Eigen::MatrixXd edgePotentials = m_edges[edgeID].getPotentials();
 
                 potentials = potentials.cwiseProduct(
@@ -171,14 +195,17 @@ void CGraph::decodeICM( std::vector<size_t> &results )
         iteration++;
     }
 
+    cout << "Iterations: " << iteration << endl;
+
     // TODO: It could be interesting return the case of stopping iterating
 }
 
-//----------------------------------------------------------------------------//
-//                                                                            //
-//                              decodeGreedy
-//                                                                            //
-//----------------------------------------------------------------------------//
+
+/*------------------------------------------------------------------------------
+
+                              decodeGreedy
+
+------------------------------------------------------------------------------*/
 
 void CGraph::decodeGreedy( std::vector<size_t> &results )
 {
@@ -187,6 +214,9 @@ void CGraph::decodeGreedy( std::vector<size_t> &results )
     results.clear();
     results.resize(N_nodes);
 
+    Eigen::VectorXd v_potentials;
+    v_potentials.resize( N_nodes );
+
     // Choose as initial class for all the nodes their more probable class
     // according to the node potentials
     for ( size_t index = 0; index < N_nodes; index++ )
@@ -194,34 +224,10 @@ void CGraph::decodeGreedy( std::vector<size_t> &results )
         size_t nodeMAP;
         m_nodes[index].getPotentials().maxCoeff(&nodeMAP);
         results[index] = nodeMAP;
+        v_potentials(index) = 0; //std::numeric_limits<double>::min();
     }
 
-    Eigen::VectorXd v_potentials;
-    v_potentials.resize( N_nodes );
-
-    // Compute the initial potential for each node and its neighbors according
-    // to its edges
-    for ( size_t index = 0; index < N_nodes; index++ )
-    {
-        Eigen::VectorXd potentials = m_nodes[index].getPotentials();
-        size_t N_neighbors = m_edges_f[index].size();
-
-        // Iterating over the neighbors, multiplying the potential of the
-        // corresponding col in the edgePotentials, according to their class
-        for ( size_t neighbor = 0; neighbor < N_neighbors; neighbor++ )
-        {
-            size_t edgeID = m_edges_f[index][neighbor];
-            size_t neighborID = m_edges[edgeID].getSecondNodeID();
-
-
-            Eigen::MatrixXd edgePotentials = m_edges[edgeID].getPotentials();
-
-            potentials = potentials.cwiseProduct( edgePotentials.col(results[neighborID]) );
-        }
-
-        v_potentials(index) = potentials.maxCoeff();
-
-    }
+    // cout << "Initial_potentials: " << v_potentials << endl;
 
     // Set the stop conditions
     bool keep_iterating = true;
@@ -249,7 +255,13 @@ void CGraph::decodeGreedy( std::vector<size_t> &results )
             for ( size_t neighbor = 0; neighbor < N_neighbors; neighbor++ )
             {
                 size_t edgeID = m_edges_f[index][neighbor];
-                size_t neighborID = m_edges[edgeID].getSecondNodeID();
+
+                size_t neighborID;
+                size_t ID1, ID2;
+
+                m_edges[edgeID].getNodesID(ID1,ID2);
+
+                ( ID1 == index ) ? neighborID = ID2 : neighborID = ID1;
 
 
                 Eigen::MatrixXd edgePotentials = m_edges[edgeID].getPotentials();
@@ -257,16 +269,19 @@ void CGraph::decodeGreedy( std::vector<size_t> &results )
                 potentials = potentials.cwiseProduct( edgePotentials.col(results[neighborID]) );
             }
 
-            //cout << "Potentials" << endl << potentials << endl;
             size_t class_res;
             double max_potential = potentials.maxCoeff(&class_res);
 
-            v_new_potentials[index] = max_potential;
+            v_new_potentials(index) = max_potential;
             new_results[index] = class_res;
 
         }
 
-        Eigen::VectorXd difference = v_potentials - v_new_potentials;
+      //  cout << "Iteration Potentials" << endl << v_new_potentials << endl;
+
+        Eigen::VectorXd difference = v_new_potentials - v_potentials;
+
+       // cout << "Difference" << difference << endl;
         size_t node;
         double max_difference = difference.maxCoeff(&node);
 
@@ -278,7 +293,7 @@ void CGraph::decodeGreedy( std::vector<size_t> &results )
         else
             keep_iterating = false;
 
-        iteration++;
+        cout << "Iteration: " << iteration++ << endl;
     }
 
     // TODO: It could be interesting return the case of stopping iterating

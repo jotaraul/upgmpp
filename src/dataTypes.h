@@ -1,30 +1,108 @@
 
+/*---------------------------------------------------------------------------*
+ |                               UPGM++                                      |
+ |                   Undirected Graphical Models in C++                      |
+ |                                                                           |
+ |              Copyright (C) 2014 Jose Raul Ruiz Sarmiento                  |
+ |                 University of Malaga (jotaraul@uma.es)                    |
+ |                         University of Osnabruk                            |
+ |                                                                           |
+ |   This program is free software: you can redistribute it and/or modify    |
+ |   it under the terms of the GNU General Public License as published by    |
+ |   the Free Software Foundation, either version 3 of the License, or       |
+ |   (at your option) any later version.                                     |
+ |                                                                           |
+ |   This program is distributed in the hope that it will be useful,         |
+ |   but WITHOUT ANY WARRANTY; without even the implied warranty of          |
+ |   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the           |
+ |   GNU General Public License for more details.                            |
+ |   <http://www.gnu.org/licenses/>                                          |
+ |                                                                           |
+ *---------------------------------------------------------------------------*/
+
+
 #ifndef GCRF_TYPES
 #define GCRF_TYPES
 
 #include <string>
 #include <vector>
-#include <map>
-#include <list>
 #include <Eigen/Dense>
 
 #include <iostream>
 
-namespace PGMplusplus
+namespace UPGMplusplus
 {
+
+    class CNodeType
+    {
+    private:
+        Eigen::MatrixXi m_weights_map;
+        Eigen::MatrixXd m_weights;
+        size_t          m_ID;
+        std::string     m_label;
+
+    public:
+
+        CNodeType()
+        {
+            static size_t ID = 0;
+            m_ID = ID;
+            ID++;
+        }
+
+        inline size_t& getID() { return m_ID; }
+        inline void setLabel( std::string &label ) { m_label = label; }
+        inline void setWeightsMap( Eigen::MatrixXi &w_m ){ m_weights_map = w_m; }
+        inline void setWeights( Eigen::MatrixXd &weights ) { m_weights = weights; }
+        inline Eigen::MatrixXd& getWeights(){ return m_weights; }
+
+    };
+
+    class CEdgeType
+    {
+    private:
+        std::vector<Eigen::MatrixXi> m_weights_map;
+        std::vector<Eigen::MatrixXd> m_weights;
+        size_t      m_ID;
+        std::string m_label;
+    public:
+        CEdgeType()
+        {
+            static size_t ID = 0;
+            m_ID = ID;
+            ID++;
+        }
+
+        inline size_t& getID() { return m_ID; }
+        inline void setLabel( std::string &label ) { m_label = label; }
+        inline void setWeightsMap( std::vector<Eigen::MatrixXi> &w_m ){ m_weights_map = w_m; }
+        inline void setWeights( std::vector<Eigen::MatrixXd> &weights ) { m_weights = weights; }
+        inline std::vector<Eigen::MatrixXd>& getWeights() { return m_weights; }
+    };
+
+
+/*----------------------------------------------------------------------------
+ *
+ *                                 CNode
+ *
+ *---------------------------------------------------------------------------*/
 	class CNode
 	{
+        /**
+          * This class defines the structure and common functions for the nodes
+          * of an Undirected Probabilistic Model (UPGM).
+          **/
 	private:
-		size_t 		m_id;		// Id of the node. Must be unique.
-		size_t		m_type;		// Type of the node.
-		std::string	m_label;	// Label of the node. If not needed, just for human-readalbe purpouses.
-        Eigen::VectorXd	m_features;	// Features of that node.
-        Eigen::VectorXd	m_potentials; 	// Potentials computed for this node.
+        size_t 		m_id;		//!< Id of the node. Must be unique. This is ensured in the constructor and is transparent for the user.
+        CNodeType   m_type;		//!< Type of the node.
+        std::string	m_label;	//!< Label of the node. If not needed, just for human-readalbe purpouses.
+        Eigen::VectorXd	m_features;	//!< Features extracted for this node.
+        Eigen::VectorXd	m_potentials; 	//!< Potentials computed for this node. They can come from the user, or for the computePotentials function in the Graph class.
 
 	public:
-		/*
-		 *	Defaul constructor
-		 */
+
+        /** Default constructor
+          */
         CNode( )
         {
             static size_t ID = 0;
@@ -32,9 +110,13 @@ namespace PGMplusplus
             ID++;
         }
 
-        CNode( size_t type,
+        /** Addtional constructor
+          */
+        CNode( CNodeType type,
             Eigen::VectorXd &features,
-            std::string label="" ) : m_type(type), m_label(label), m_features(features)
+            std::string label="" ) : m_type(type),
+                                    m_label(label),
+                                    m_features(features)
         {
             static size_t ID = 0;
             m_id = ID;
@@ -42,23 +124,48 @@ namespace PGMplusplus
         }
 
 
-		/*
-		 *	Defaul destructor
-		 */
+        /**	 Defaul destructor
+          */
 		~CNode(){}
- 
-		/*
-		 *	Function for accessing/modifying member data
-		 */
+
+        /**	Function for retrieving the ID of the node.
+          * \return The ID of the node.
+          */
         inline size_t getId() const { return m_id; }
-        inline size_t getType()	const { return m_type; }
+
+        /**	Function for retrieving the node's type.
+          * \return The node's type.
+          */
+        inline CNodeType getType()	const { return m_type; }
+
+        /**	Function for retrieving the Label of the node.
+          * \return The Label of the node.
+          */
         inline std::string getLabel() const { return m_label; }
+
+        /**	Function for retrieving the features of the node.
+          * \return The features of the node.
+          */
         inline Eigen::VectorXd getFeatures() const { return m_features;	}
+
+        /**	Function for setting the node's features
+          * \param feat: the new features of the node.
+          */
+        inline void setFeatures( Eigen::VectorXd &feat) { m_features = feat; }
+
+        /**	Function for retrieving the potentials of the node.
+          * \return The potentials of the node.
+          */
         inline Eigen::VectorXd getPotentials() const { return m_potentials; }
+
+        /**	Function for setting the node's potentials
+          * \param pot: new node potentials.
+          */
         inline void setPotentials( const Eigen::VectorXd &pot ){ m_potentials = pot; }
 
-        size_t getMostProbableClass();
-
+        /**	Function for prompting the content of a node
+          * \return An stream with the node's information dumped into it.
+          */
         friend std::ostream& operator<<(std::ostream& output, const CNode& n)
         {
             output << "ID: " << n.getId() << std::endl;
@@ -71,6 +178,13 @@ namespace PGMplusplus
 
 	};
 
+
+/*----------------------------------------------------------------------------
+ *
+ *                                 CEdge
+ *
+ *---------------------------------------------------------------------------*/
+
 	class CEdge
 	{
 	private:
@@ -79,7 +193,7 @@ namespace PGMplusplus
         CNode m_n2; // Change for ids
         Eigen::VectorXd	m_features;
         Eigen::MatrixXd	m_potentials;
-        size_t          m_type;
+        CEdgeType       m_type;
 
 	public:	
 
@@ -87,9 +201,9 @@ namespace PGMplusplus
 
         CEdge( CNode &n1,
                CNode &n2,
-               size_t type) : m_type(type)
+               CEdgeType type) : m_type(type)
         {
-            if ( n1.getType() > n2.getType() )
+            if ( n1.getType().getID() > n2.getType().getID() )
             {
                 m_n1 = n2;
                 m_n2 = n1;
@@ -103,11 +217,11 @@ namespace PGMplusplus
 
 		CEdge( CNode &n1, 
             CNode    &n2,
-            size_t   type,
+            CEdgeType   type,
             Eigen::VectorXd &features,
             Eigen::MatrixXd &potentials) : m_features(features), m_potentials(potentials), m_type(type)
 		{
-			if ( n1.getType() > n2.getType() )
+            if ( n1.getType().getID() > n2.getType().getID() )
 			{
 				m_n1 = n2;
 				m_n2 = n1;
@@ -119,9 +233,10 @@ namespace PGMplusplus
 			}
 		}
 
-        inline size_t getType() const { return m_type; }
+        inline CEdgeType getType() const { return m_type; }
         inline void getNodes ( CNode &n1, CNode &n2 ) const { n1 = m_n1; n2 = m_n2; }
         inline size_t getSecondNodeID () const { return m_n2.getId(); }
+        void getNodesID( size_t &ID1, size_t &ID2 ){ ID1= m_n1.getId(); ID2 = m_n2.getId(); }
         inline Eigen::VectorXd getFeatures() const { return m_features; }
         inline void setFeatures( const Eigen::VectorXd &features) { m_features = features; }
         inline Eigen::MatrixXd getPotentials() const { return m_potentials; }
@@ -144,6 +259,12 @@ namespace PGMplusplus
 
 	};
 
+/*----------------------------------------------------------------------------
+ *
+ *                                 CGraph
+ *
+ *---------------------------------------------------------------------------*/
+
     class CGraph
     {
     private:
@@ -151,8 +272,6 @@ namespace PGMplusplus
         std::vector<std::vector<size_t> >   m_edges_f;
         std::vector<CEdge>                  m_edges;
         std::vector<CNode>                  m_nodes;
-        std::vector<Eigen::MatrixXd>        m_nodeWeights;
-        std::vector<std::vector<Eigen::MatrixXd> > m_edgeWeights;
 
         struct TOptions
         {
@@ -168,22 +287,6 @@ namespace PGMplusplus
         inline void getNodes( std::vector<CNode> &v_nodes ) const { v_nodes = m_nodes; }
         inline void getEdges( std::vector<CEdge> &v_edges ) const { v_edges = m_edges; }
         inline CEdge& getEdge( size_t index ){ return m_edges[index]; }
-
-        void addNodeWeights( Eigen::MatrixXd &weights )
-        {
-            size_t N_elements = m_nodeWeights.size();
-            m_nodeWeights.resize( N_elements + 1 );
-
-            m_nodeWeights[ N_elements ] = weights;
-        }
-
-        void addEdgeWeights( std::vector<Eigen::MatrixXd> &weights )
-        {
-            size_t N_elements = m_edgeWeights.size();
-            m_edgeWeights.resize( N_elements + 1 );
-
-            m_edgeWeights[ N_elements ] = weights;
-        }
 
         void addEdge( CEdge &edge )
         {
@@ -229,6 +332,41 @@ namespace PGMplusplus
 
         void decodeICM( std::vector<size_t> &results );
         void decodeGreedy( std::vector<size_t> &results );
+
+    };
+
+/*----------------------------------------------------------------------------
+ *
+ *                            CTrainingDataSet
+ *
+ *---------------------------------------------------------------------------*/
+
+
+    class CTrainingDataSet
+    {
+    private:
+        std::vector<CGraph> m_graphs;
+        Eigen::VectorXd     m_nodeWeights;
+        Eigen::VectorXd     m_edgeWeights;
+
+    public:
+
+        CTrainingDataSet(){}
+
+        inline void addGraph( CGraph graph ){ m_graphs.push_back( graph ); }
+
+        void setNodeWeights( Eigen::VectorXd &nodeWeights )
+        {
+            m_nodeWeights = nodeWeights;
+        }
+
+        void setEdgeWeights( Eigen::VectorXd &edgeWeights )
+        {
+            m_edgeWeights = edgeWeights;
+        }
+
+        void train();
+
 
     };
 }  
