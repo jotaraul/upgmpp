@@ -1,5 +1,5 @@
 # ----------------------------------------------------------------------------
-# Master CMake file for the Kinect tools
+# Master CMake file for the UPGMpp project.
 #
 #  Run with "cmake ." at the root directory to build the makefiles for 
 #   the software.
@@ -24,24 +24,47 @@ if(COMMAND cmake_policy)
 endif(COMMAND cmake_policy)
  
 list(APPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/cmake)
+
+# EIGEN
 find_package(Eigen3 REQUIRED)
 include_directories(${EIGEN3_INCLUDE_DIR})
 
-MESSAGE( STATUS "EIGEN_INCLUDE_DIRS: " ${EIGEN3_INCLUDE_DIR} )
+# BOOST
+set(Boost_USE_STATIC_LIBS OFF) 
+set(Boost_USE_MULTITHREADED ON)  
+set(Boost_USE_STATIC_RUNTIME OFF) 
+
+find_package(Boost 1.55.0 COMPONENTS filesystem REQUIRED) 
+
+include_directories(${Boost_INCLUDE_DIRS}) 
+
+# libBFGS
+set(libLBFGS_INCLUDE_DIR "./" CACHE FILEPATH "Directory of the libBFGS includes directory")
+include_directories(${libLBFGS_INCLUDE_DIR})
+find_path(libLBGS_LIBRARY_DIR "./" CACHE FILEPATH "Directory of the libBFGS library directory")
 
 
 # ---------------------------------------------
 # TARGET:
 # ---------------------------------------------
 
-FILE(GLOB aux_srcs1 ${CMAKE_SOURCE_DIR}/src/*.cpp)
-FILE(GLOB aux_srcs2 ${CMAKE_SOURCE_DIR}/src/*.h)
-SET(SRCS ${aux_srcs1} ${aux_srcs2})
+#FILE(GLOB aux_srcs1 ${CMAKE_SOURCE_DIR}/src/*.cpp)
+#FILE(GLOB aux_srcs2 ${CMAKE_SOURCE_DIR}/src/*.h)
+#SET(SRCS ${aux_srcs1} ${aux_srcs2})
 
 
 # Maybe this is redundant with the lines above...
-set( CMAKE_CXX_FLAGS "-pg")
-SET( CMAKE_EXE_LINKER_FLAGS  "-pg")
+#set( CMAKE_CXX_FLAGS "-pg")
+#SET( CMAKE_EXE_LINKER_FLAGS  "-pg")
+
+
+# Create UPGM++ libraries and add include directories to the examples
+SET( UPGM++_LIBRARIES "base;training;decoding" )
+
+FOREACH( LIBRARY ${UPGM++_LIBRARIES} )
+	ADD_SUBDIRECTORY(libs/${LIBRARY})
+	INCLUDE_DIRECTORIES(${CMAKE_SOURCE_DIR}/libs/${LIBRARY})
+ENDFOREACH( LIBRARY ${UPGM++_LIBRARIES} )
 
 
 # Enable GCC profiling (GCC only)
@@ -58,12 +81,28 @@ IF(UNIX)
 	LINK_DIRECTORIES("${CMAKE_CURRENT_SOURCE_DIR}")
 ENDIF(UNIX)
 
+
+
+
+
+set(LIB_PREFIX "libUPGMplusplus-")
+
+# Create examples
+SET( UPGM++_EXAMPLES "training_example" )
+
+FOREACH( EXAMPLE ${UPGM++_EXAMPLES} )
+	# Define the executable target:
+	ADD_EXECUTABLE(${EXAMPLE} ${CMAKE_SOURCE_DIR}/examples/${EXAMPLE}/example.cpp)
+	# Link the executable
+        TARGET_LINK_LIBRARIES(${EXAMPLE} base training decoding)
+ENDFOREACH( EXAMPLE ${UPGM++_EXAMPLES} )
+
 # Define the executable target:
-ADD_EXECUTABLE(${PROJECT_NAME} ${SRCS})
+#ADD_EXECUTABLE(${PROJECT_NAME} ${SRCS})
 #ADD_EXECUTABLE(${PROJECT_NAME} WIN32 ${SRCS})
 
-# Add MRPT library to linker:
-TARGET_LINK_LIBRARIES( ${PROJECT_NAME} )
+# Add needed libraries to the linker:
+#TARGET_LINK_LIBRARIES( ${PROJECT_NAME} ${libLBGS_LIBRARY_DIR}lbfgs.o)
 
 ##  Copy the configuration file:
 #CONFIGURE_FILE(

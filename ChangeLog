@@ -1,0 +1,23 @@
+TODOs:
+
+- (1) Make the library robust to removed nodes or edges.
+- (4) Implement decoding method ICM with restarts.
+- (3) Implement exact (brute force) decoding method.
+- (2) Implement some approximated method for inference.
+- (3) Implement exact (brute force) inference method.
+- (3) Make the libray robust when dealing with nodes and edges of different types.
+- (2) Study and implement how to hallucinate objects and obtain their most probable location.
+
+
+Alpha 0.0.2 (17-02-14):
+- Huge refactoring: The project has been split into a few libraries: base, training and decoding by the moment, but it is probable that the inference one will be added in the future.
+- An example of the use of the library for training has been created.
+- Now decoding methods can return the negative-log-likelihood of the result as well as the cause of stopping iterating.
+- libLBFGS added as dependency for training PGMs.
+- Development of the basic functinoality for training a PGM.
+- Documentation improved.
+
+
+Alpha 0.0.1 (13-02-14):
+- Added two methods for decoding: ICM and GreedyICM.
+- Implemented basic data structures for building a PGM, namely: nodes and edges. 
