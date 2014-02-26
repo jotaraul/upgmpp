@@ -118,8 +118,8 @@ static lbfgsfloatval_t evaluate(
 
     // For each graph in the dataset
 
-    for ( size_t i=0; i < n; i++ )
-        cout << "x[" << i << "] : " << x[i] << endl;
+   /* for ( size_t i=0; i < n; i++ )
+        cout << "x[" << i << "] : " << x[i] << endl;*/
 
     lbfgsfloatval_t fx = 0.0;
 
@@ -132,18 +132,19 @@ static lbfgsfloatval_t evaluate(
     // Compute the function value
 
     for ( size_t dataset = 0; dataset < N_datasets; dataset++ )
-    {
+    {        
         graphs[dataset].computePotentials();
         td->updateFunctionValueAndGradients( graphs[dataset], groundTruth[dataset], fx, x, g );
     }
 
-    double lambda = 0;
+    double lambda = 10;
 
     // Apply L-2 norm
     double regularizationFactor = 0;
     for ( size_t i = 0; i < n; i++ )
     {
         regularizationFactor += lambda*(x[i]*x[i]);
+        g[i] += 2*lambda*x[i];
     }
 
     fx = fx + regularizationFactor;
@@ -225,13 +226,11 @@ void CTrainingDataSet::train()
 
         N_weights += N_cols * N_rows;
 
-        cout << *m_nodeTypes[i] << endl;
+        //cout << *m_nodeTypes[i] << endl;
 
     }
 
     // Edges
-
-    bool useSymetricWeights = true;
 
     for ( size_t i = 0; i < m_edgeTypes.size(); i++ )
     {
@@ -239,13 +238,14 @@ void CTrainingDataSet::train()
 
         std::vector<Eigen::MatrixXi> v_weightsMap(N_features);
 
-        // Use symetric weights?
-        // TODO: This should be different for each edge Type...
-        if ( useSymetricWeights )
-        {
-            size_t index = N_weights;
+        size_t index = N_weights;
 
-            for ( size_t feature = 0; feature < N_features; feature++ )
+        Eigen::VectorXi typeOfEdgeFeatures =
+                                          m_typesOfEdgeFeatures[m_edgeTypes[i]];
+
+        for ( size_t feature = 0; feature < N_features; feature++ )
+        {
+            if ( typeOfEdgeFeatures(feature) == 0)
             {
                 size_t N_cols = m_edgeTypes[i]->getWeights()[feature].cols();
                 size_t N_rows = m_edgeTypes[i]->getWeights()[feature].rows();
@@ -261,9 +261,9 @@ void CTrainingDataSet::train()
 
                     for ( size_t col = row+1; col < N_cols; col++ )  // cols
                     {
-                             weightsMap(row,col) = index;
-                             weightsMap(col,row) = index;
-                             index++;
+                        weightsMap(row,col) = index;
+                        weightsMap(col,row) = index;
+                        index++;
                     }
                 }
 
@@ -284,16 +284,11 @@ void CTrainingDataSet::train()
                 v_weightsMap[feature] = weightsMap;
 
             }
-
-        }
-        else
-        {
-            for ( size_t feature = 0; feature < N_features; feature++ )
+            else if ( typeOfEdgeFeatures(feature) == 1 )
             {
                 size_t N_cols = m_edgeTypes[i]->getWeights()[feature].cols();
                 size_t N_rows = m_edgeTypes[i]->getWeights()[feature].rows();
 
-                size_t index = N_weights;
 
                 Eigen::MatrixXi weightsMap;
                 weightsMap.resize( N_rows, N_cols );
@@ -307,22 +302,23 @@ void CTrainingDataSet::train()
 
                 v_weightsMap[feature] = weightsMap;
 
-
                 N_weights += N_cols * N_rows;
             }
+            else if ( typeOfEdgeFeatures(feature) == 2 )
+            {
+                v_weightsMap[feature] = v_weightsMap[feature-1].transpose();
+            }
+
+            cout << "Map for feature" << feature << endl;
+            cout << v_weightsMap[feature] << endl;
         }
 
         m_edgeWeightsMap[m_edgeTypes[i]] = v_weightsMap;
 
-        cout << *m_edgeTypes[i] << endl;
+        //cout << *m_edgeTypes[i] << endl;
     }
 
-
-    // Total number of weights
-
-    if ( !useSymetricWeights )
-        N_weights += 1;
-
+    cout << "Number of weights" << N_weights << endl;
     //
     //  2. Initialize the weights.
     //
@@ -346,7 +342,7 @@ void CTrainingDataSet::train()
     }
 
     /* Initialize the parameters for the L-BFGS optimization. */
-    //param.orthantwise_c = 1000;
+    //param.orthantwise_c = 100;
     //param.orthantwise_start = 1;
     //param.orthantwise_end = N_weights - 1;
     param.linesearch = LBFGS_LINESEARCH_BACKTRACKING;
@@ -378,6 +374,19 @@ void CTrainingDataSet::train()
     }
 
     cout << "  fx = " << fx << ", x[0] = " << x[0] << ", x[1] = " << x[1] << endl;
+
+    cout << "Final x " << endl;
+    for ( size_t i=0; i < N_weights; i++ )
+            cout << "x[" << i << "] : " << x[i] << endl;
+
+    for ( size_t i = 0; i < m_edgeTypes.size(); i++ )
+    {
+        cout << "Edge type " << m_edgeTypes[i]->getID() << endl;
+        for ( size_t feat = 0; feat < m_edgeTypes[i]->getWeights().size(); feat++)
+            cout << "Feature " << feat << " weights: " << endl << m_edgeTypes[i]->getWeights()[feat] << endl;
+
+        cout << "----------------------------------------------" << endl;
+    }
 
     lbfgs_free(x);
 }
@@ -448,12 +457,12 @@ void CTrainingDataSet::updateFunctionValueAndGradients( CGraph &graph,
         //cout << "Potentials    : " << potentials.transpose() << endl;
         //cout << "Potentials sum:" << potentials.sum() << endl;
         Eigen::VectorXd nodeBel = potentials * ( 1 / (double) potentials.sum() );
-        cout << "Node bel      : " << nodeBel.transpose() << endl;
+        //cout << "Node bel      : " << nodeBel.transpose() << endl;
 
         size_t N_classes = potentials.rows();
         size_t N_features = features.rows();
 
-        cout << "N_Classes" << N_classes << " N_Features: " << N_features << endl;
+        //cout << "N_Classes" << N_classes << " N_Features: " << N_features << endl;
 
         // Update node weights gradient
         for ( size_t class_i = 0; class_i < N_classes; class_i++ )

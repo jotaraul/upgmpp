@@ -944,6 +944,8 @@ int main (int argc, char* argv[])
 
 
     graph.computePotentials();
+    graph2.computePotentials();
+    graph3.computePotentials();
 
     /*cout << "GRAPH3: " << endl << graph << endl;
 
@@ -962,7 +964,7 @@ int main (int argc, char* argv[])
 
     std::map<size_t,size_t> resultsMap;
 
-    decodeICM( graph, options, resultsMap );
+    decodeICM( graph2, options, resultsMap );
 
     std::map<size_t,size_t>::iterator it;
 
@@ -973,13 +975,36 @@ int main (int argc, char* argv[])
 
     cout << "New Greedy Nigga!"<< endl;
 
-    decodeICM( graph, options, resultsMap );
+    decodeICMGreedy( graph3, options, resultsMap );
 
     for ( it = resultsMap.begin(); it != resultsMap.end(); it++ )
     {
         std::cout << "Node id " << it->first << " labeled as " << it->second << std::endl;
     }
 
+    cout << "New Exact Nigga!"<< endl;
+
+    decodeExact( graph, options, resultsMap );
+
+    for ( it = resultsMap.begin(); it != resultsMap.end(); it++ )
+    {
+        std::cout << "Node id " << it->first << " labeled as " << it->second << std::endl;
+    }
+
+    cout << "New Exact with Mask Nigga!"<< endl;
+    std::map<size_t,std::vector<size_t> > mask;
+
+    std::vector<size_t> validValues;
+    validValues.push_back(1);
+
+    mask[0] = validValues;
+
+    decodeExact( graph3, options, resultsMap, mask );
+
+    for ( it = resultsMap.begin(); it != resultsMap.end(); it++ )
+    {
+        std::cout << "Node id " << it->first << " labeled as " << it->second << std::endl;
+    }
 
     return 1;
 }

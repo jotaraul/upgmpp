@@ -85,10 +85,10 @@ ENDIF(UNIX)
 
 
 
-set(LIB_PREFIX "libUPGMplusplus-")
+set(LIB_PREFIX "libUPGMpp-")
 
 # Create examples
-SET( UPGM++_EXAMPLES "training_example" )
+SET( UPGM++_EXAMPLES "training_example;synthetic_scenarios_example" )
 
 FOREACH( EXAMPLE ${UPGM++_EXAMPLES} )
 	# Define the executable target:

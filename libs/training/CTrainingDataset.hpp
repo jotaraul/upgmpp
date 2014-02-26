@@ -52,8 +52,9 @@ namespace UPGMpp
         std::vector<std::map<size_t,size_t> >      m_groundTruth;
         std::vector<CNodeTypePtr>    m_nodeTypes;
         std::vector<CEdgeTypePtr>    m_edgeTypes;
+        std::map<CEdgeTypePtr,Eigen::VectorXi>          m_typesOfEdgeFeatures;
         size_t                       N_weights;
-        std::map<CNodeTypePtr, Eigen::MatrixXi>             m_nodeWeightsMap;
+        std::map<CNodeTypePtr, Eigen::MatrixXi>              m_nodeWeightsMap;
         std::map<CEdgeTypePtr,std::vector<Eigen::MatrixXi> > m_edgeWeightsMap;
 
     public:
@@ -72,7 +73,7 @@ namespace UPGMpp
             {return m_edgeWeightsMap[edgeType]; }
         inline std::vector<std::map<size_t,size_t> >& getGroundTruth(){ return m_groundTruth; }
 
-        inline void addGraph( CGraph graph ){ m_graphs.push_back( graph ); }
+        inline void addGraph( CGraph &graph ){ m_graphs.push_back( graph ); }
 
         void addNodeType( CNodeTypePtr nodeType )
         {
@@ -84,6 +85,16 @@ namespace UPGMpp
         {
             // Add the edge type to the vector of edge types
             m_edgeTypes.push_back( edgeType );
+            Eigen::VectorXi defaultTypeOfEdgeFeats( edgeType->getWeights().size() );
+            defaultTypeOfEdgeFeats.fill(0);
+            m_typesOfEdgeFeatures[ edgeType ] = defaultTypeOfEdgeFeats;
+        }
+
+        void addEdgeType( CEdgeTypePtr edgeType, Eigen::VectorXi &typeOfEdgeFeatures )
+        {
+            // Add the edge type to the vector of edge types
+            m_edgeTypes.push_back( edgeType );
+            m_typesOfEdgeFeatures[ edgeType ] = typeOfEdgeFeatures;
         }
 
         void train();

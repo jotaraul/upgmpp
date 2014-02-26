@@ -42,17 +42,21 @@ namespace UPGMpp
     {
     private:
 
-        CNodePtr m_n1;
-        CNodePtr m_n2; // Change for ids
-        Eigen::VectorXd	m_features;
-        Eigen::MatrixXd	m_potentials;
-        CEdgeTypePtr       m_type;
-        size_t          m_id;
+        CNodePtr m_n1;      //!< First node in the edge. It will be always the one with the lower ID.
+        CNodePtr m_n2;      //!< Second edge's node.
+        Eigen::VectorXd	m_features;     //!< Vector of extracted features for this edge.
+        Eigen::MatrixXd	m_potentials;   //!< Computed potentials. Initially empty.
+        CEdgeTypePtr       m_type;  //!< Pointer to the edge type.
+        size_t          m_id;       //!< ID of the edge. It is unique and automatically assigned.        
 
     public:
 
+        /** Default constructor.
+         */
         CEdge() {}
 
+        /** Additional constructor.
+         */
         CEdge( CNodePtr n1,
                CNodePtr n2,
                CEdgeTypePtr type) : m_type(type)
@@ -73,6 +77,8 @@ namespace UPGMpp
             }
         }
 
+        /** Additional constructor.
+         */
         CEdge( CNodePtr &n1,
                CNodePtr    &n2,
                CEdgeTypePtr   type,
@@ -96,16 +102,33 @@ namespace UPGMpp
         }
 
 
+        /**	Function for retrieving the ID of the edge.
+          * \return The ID of the edge.
+          */
         inline size_t getId(){ return m_id; }
+
+
         inline CEdgeTypePtr getType() const { return m_type; }
+
+
         inline void getNodes ( CNodePtr &n1, CNodePtr &n2 ) const { n1 = m_n1; n2 = m_n2; }
+
         inline size_t getSecondNodeID () const { return m_n2->getId(); }
+
         void getNodesID( size_t &ID1, size_t &ID2 ){ ID1= m_n1->getId(); ID2 = m_n2->getId(); }
+
+
         inline Eigen::VectorXd getFeatures() const { return m_features; }
+
         inline Eigen::VectorXd& getFeatures(){ return m_features; }
+
         inline void setFeatures( const Eigen::VectorXd &features) { m_features = features; }
+
+
         inline Eigen::MatrixXd getPotentials() const { return m_potentials; }
+
         inline void setPotentials ( Eigen::MatrixXd &potentials ) { m_potentials = potentials; }
+
 
         friend std::ostream& operator<<(std::ostream& output, const CEdge& e)
         {

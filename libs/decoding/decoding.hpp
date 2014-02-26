@@ -20,6 +20,12 @@ namespace UPGMpp
                              TOptions &decodingOptions,
                              std::map<size_t,size_t> &results );
 
+    extern size_t decodeExact( CGraph &graph,
+                             TOptions &decodingOptions,
+                             std::map<size_t,size_t> &results,
+                             const std::map<size_t,std::vector<size_t> > &mask
+                                            = std::map<size_t,std::vector<size_t> >());
+
 }
 
 #endif

@@ -36,7 +36,7 @@ using namespace std;
 
 size_t UPGMpp::decodeICM( CGraph &graph, TOptions &options, std::map<size_t,size_t> &results )
 {
-    cout << "Satarting ICM decoding..." << endl;
+    //cout << "Satarting ICM decoding..." << endl;
 
     // Direct access to useful vbles
     const std::vector<CNodePtr> &nodes = graph.getNodes();
@@ -56,8 +56,9 @@ size_t UPGMpp::decodeICM( CGraph &graph, TOptions &options, std::map<size_t,size
         size_t ID = nodes[index]->getId();
 
         nodes[index]->getPotentials().maxCoeff(&nodeMAP);
+        //cout << "Node potentials for " << ID << ": " << nodes[index]->getPotentials().transpose() << endl;
         results[ID] = nodeMAP;
-        //cout << nodeMAP << endl;
+        //cout << "nodeMap" << nodeMAP << endl;
     }
 
     // Set the stop conditions
@@ -94,8 +95,10 @@ size_t UPGMpp::decodeICM( CGraph &graph, TOptions &options, std::map<size_t,size
 
                 ( ID1 == ID ) ? neighborID = ID2 : neighborID = ID1;
 
-                //cout << "Testing edge <" << index << "," << neighborID << ">" << endl;
+                //cout << "Testing edge <" << ID << "," << neighborID << ">" << endl;
                 Eigen::MatrixXd edgePotentials = edgePtr->getPotentials();
+
+                //cout << "Edge potentials" << edgePotentials.col(results[neighborID]) << endl;
 
                 potentials = potentials.cwiseProduct(
                             edgePotentials.col(results[neighborID])
@@ -247,3 +250,83 @@ size_t UPGMpp::decodeICMGreedy( CGraph &graph,
 }
 
 
+/*------------------------------------------------------------------------------
+
+                                decodeExact
+
+------------------------------------------------------------------------------*/
+
+void decodeExactRec( CGraph &graph,
+                const std::map<size_t,vector<size_t> > &mask,
+                size_t index,
+                map<size_t,size_t> &nodesAndValuesToTest,
+                std::map<size_t,size_t> &results,
+                double &maxLikelihood);
+
+size_t UPGMpp::decodeExact(CGraph &graph, TOptions &options, std::map<size_t,size_t> &results, const std::map<size_t, vector<size_t> > &mask )
+{
+
+    results.clear();
+
+    double maxLikelihood = std::numeric_limits<double>::min();
+    map<size_t,size_t>  nodesAndValuesToTest;
+    std::vector<CNodePtr> &nodes = graph.getNodes();
+    size_t index = 0;
+
+    decodeExactRec( graph, mask, index, nodesAndValuesToTest, results, maxLikelihood);
+
+    return 1;
+}
+
+void decodeExactRec( CGraph &graph,
+                const std::map<size_t,vector<size_t> > &mask,
+                size_t index,
+                map<size_t,size_t> &nodesAndValuesToTest,
+                std::map<size_t,size_t> &results,
+                double &maxLikelihood)
+{
+    const CNodePtr node = graph.getNode( index );
+    const size_t  nodeID = node->getId();
+    const CNodeTypePtr &nodeType = node->getType();
+    size_t nodeClasses = nodeType->getClasses();
+    size_t totalNodes = graph.getNodes().size();
+    vector<size_t> classesToCheck;
+
+    for ( size_t i = 0; i < nodeClasses; i++ )
+        classesToCheck.push_back(i);
+
+    if ( !mask.empty() )
+    {
+        if ( mask.count( nodeID ) )
+            classesToCheck = mask.at(nodeID);
+    }
+
+    for ( size_t i = 0; i < classesToCheck.size(); i++ )
+    {
+        size_t classToCheck = classesToCheck[i];
+
+        if ( index == totalNodes - 1 )
+        {
+            nodesAndValuesToTest[nodeID] = classToCheck;
+            double likelihood = graph.getUnnormalizedLogLikelihood( nodesAndValuesToTest );
+
+            cout << "Testing..." ;
+            for ( map<size_t,size_t>::iterator it = nodesAndValuesToTest.begin(); it != nodesAndValuesToTest.end(); it++ )
+            {
+                std::cout << "[ID:" << it->first << " ,value " << it->second << "]";
+            }
+            cout << " Likelihood: " << likelihood << " Max: " << maxLikelihood<< endl ;
+
+            if ( likelihood > maxLikelihood )
+            {
+                results = nodesAndValuesToTest;
+                maxLikelihood = likelihood;
+            }
+        }
+        else
+        {
+            nodesAndValuesToTest[nodeID] = classToCheck;
+            decodeExactRec( graph, mask, index + 1, nodesAndValuesToTest, results, maxLikelihood);
+        }
+    }
+}

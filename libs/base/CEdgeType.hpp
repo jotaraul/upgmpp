@@ -48,7 +48,7 @@ namespace UPGMpp
          *  explotation of a given edge type.
          */
     private:
-        std::vector<Eigen::MatrixXd> m_weights;     //!< Vector of matrices of weights. Each position of a vector correspond with a matrix for a certain edge feature.
+        std::vector<Eigen::MatrixXd> m_weights;     //!< Vector of matrices of weights. Each position of a vector correspond with a matrix for a certain edge feature.                
         size_t      m_ID;       //!< ID of the type of Edge. Must be unique (this is transparent for the user).
         std::string m_label;    //!< A label assigned to this type of edge. E.g. "Edge between an object and a place".
     public:

@@ -138,7 +138,7 @@ double CGraph::getUnnormalizedLogLikelihood( std::map<size_t,size_t> &classes)
     for ( it = classes.begin(); it != classes.end(); it++ )
     {
         CNodePtr node = getNodeWithID( it->first );
-        unlikelihood *= std::log(node->getPotentials()(classes[node->getId()]));
+        unlikelihood *= node->getPotentials()(classes[node->getId()]);
     }
 
     for ( size_t index = 0; index < N_edges; index++ )
@@ -149,12 +149,15 @@ double CGraph::getUnnormalizedLogLikelihood( std::map<size_t,size_t> &classes)
         size_t ID1 = n1->getId();
         size_t ID2 = n2->getId();
 
-        if ( ID1 > ID2 )
-            unlikelihood *= std::log(edge->getPotentials()(classes[ID1],classes[ID2]));
+        if ( ID1 > ID2 )            
+            unlikelihood *= edge->getPotentials()(classes[ID2],classes[ID1]);
         else
-            unlikelihood *= std::log(edge->getPotentials()(classes[ID2],classes[ID1]));
+            unlikelihood *= edge->getPotentials()(classes[ID1],classes[ID2]);
 
     }
+
+
+    unlikelihood = std::log( unlikelihood );
 
     return unlikelihood;
 }

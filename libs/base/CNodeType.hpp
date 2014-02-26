@@ -109,6 +109,8 @@ namespace UPGMpp
           */
         inline Eigen::MatrixXd& getWeights(){ return m_weights; }
 
+        inline size_t getClasses() { return m_weights.rows(); }
+
 
         /**	Function for prompting the content of a node type
           * \return An stream with the node type information dumped into it.

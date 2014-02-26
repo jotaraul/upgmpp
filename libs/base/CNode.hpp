@@ -86,6 +86,10 @@ namespace UPGMpp
           */
         inline void setType( CNodeTypePtr n_t ){ m_type = n_t; }
 
+        /**	Function for setting the Label of the node.
+          * param The new label of the node.
+          */
+        inline void setLabel( std::string  &label) { m_label = label; }
 
         /**	Function for retrieving the Label of the node.
           * \return The Label of the node.
