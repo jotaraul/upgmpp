@@ -23,6 +23,9 @@
 #ifndef _UPGMpp_EDGE_TYPE_
 #define _UPGMpp_EDGE_TYPE_
 
+#include "CNodeType.hpp"
+#include "base_utils.hpp"
+
 #include <string>
 #include <vector>
 #include <Eigen/Dense>
@@ -40,6 +43,14 @@ namespace UPGMpp
 
     typedef boost::shared_ptr<CEdgeType> CEdgeTypePtr;
 
+    /** Function used to compute the potentials of an edge of this type. It can
+     * be set by the user ;).
+     * \param weights: vector of matrices of weights trained for this edge type.
+     * \param features: Features of the edge.
+     * \return The edge potentials.
+     */
+    extern Eigen::MatrixXd linearModelEdge(std::vector<Eigen::MatrixXd> &weights, Eigen::VectorXd &features);
+
     class CEdgeType
     {
         /** Given that multiple types of nodes can coexist in a same graph, the
@@ -51,29 +62,62 @@ namespace UPGMpp
         std::vector<Eigen::MatrixXd> m_weights;     //!< Vector of matrices of weights. Each position of a vector correspond with a matrix for a certain edge feature.                
         size_t      m_ID;       //!< ID of the type of Edge. Must be unique (this is transparent for the user).
         std::string m_label;    //!< A label assigned to this type of edge. E.g. "Edge between an object and a place".
+        Eigen::MatrixXd (*m_computePotentialsFunction)( std::vector<Eigen::MatrixXd> &, Eigen::VectorXd &);
+        CNodeTypePtr m_nodeType1; //!< Node type of the first node.
+        CNodeTypePtr m_nodeType2; //!< Node type of the second node.
+
+        size_t setID(){ static size_t ID = 0; return ID++; }
+
     public:
 
         /** Default constructor
          */
         CEdgeType()
         {
-            static size_t ID = 0;
-            m_ID = ID;
-            ID++;
+            m_computePotentialsFunction = &linearModelEdge;
+
+            m_ID = setID();
         }
 
         /** Additional constructor
          */
-        CEdgeType( size_t N_features, size_t N_classes1, size_t N_classes2 )
+        CEdgeType( size_t N_features,
+                   CNodeTypePtr nodeType1,
+                   CNodeTypePtr nodeType2,
+                   std::string label="")
         {
-            static size_t ID = 0;
-            m_ID = ID;
-            ID++;
+            m_computePotentialsFunction = &linearModelEdge;
 
+            // Get unique ID            
+            m_ID = setID();
+
+            size_t N_classes_1;
+            size_t N_classes_2;
+
+            // Ensure that the node type with the lower ID is always the first
+            // node type in the edge type.
+            if ( nodeType1->getID() <= nodeType2->getID() )
+            {
+                m_nodeType1 = nodeType1;
+                m_nodeType2 = nodeType2;
+
+                N_classes_1 = nodeType1->getClasses();
+                N_classes_2 = nodeType2->getClasses();
+            }
+            else
+            {
+                m_nodeType1 = nodeType2;
+                m_nodeType2 = nodeType1;
+
+                N_classes_1 = nodeType2->getClasses();
+                N_classes_2 = nodeType1->getClasses();
+            }
+
+            // Create the vector of matrices of weights, one per edge feature
             m_weights.resize( N_features );
 
             for ( size_t i = 0; i < N_features; i++ )
-                m_weights[i].resize( N_classes1, N_classes2 );
+                m_weights[i].resize( N_classes_1, N_classes_2 );
         }
 
         /**	Function for retrieving the ID of the edge type.
@@ -92,6 +136,10 @@ namespace UPGMpp
           */
         inline void setLabel( std::string &label ) { m_label = label; }
 
+        /**
+         */
+        inline CNodeTypePtr getN1Type() { return m_nodeType1; }
+
         /** Establishs a new vector of matrices of weights.
          *  \param weights: new vector of matrices of weights, where each vector
          *                  position refers to an edge feature.
@@ -108,6 +156,25 @@ namespace UPGMpp
          */
         inline std::vector<Eigen::MatrixXd>& getWeights() { return m_weights; }
 
+        /** Function that computes the potentials of an edge given their features.
+         * \param features: features of the edge.
+         * \return The edge potentials.
+         **/
+        Eigen::MatrixXd computePotentials( Eigen::VectorXd &features )
+        {
+            return (*m_computePotentialsFunction)( m_weights, features );
+        }
+
+        /** Set the function for computing the edge potentials
+         * \param newFunction: New function for computing the potentials.
+         */
+        void setComputePotentialsFunction(
+                Eigen::MatrixXd (*newFunction)
+                (std::vector<Eigen::MatrixXd> &, Eigen::VectorXd &) )
+        {
+            m_computePotentialsFunction = newFunction;
+        }
+
         /**	Function for prompting the content of a edge type
           * \return An stream with the edge type information dumped into it.
           */
@@ -117,8 +184,37 @@ namespace UPGMpp
 
             return output;
         }
+
+        //
+        //  Serialization stuff
+        //
+        friend class boost::serialization::access;
+
+        template<class Archive>
+        void save(Archive & ar, const unsigned int version) const
+        {
+            // note, version is always the latest when saving
+            ar & m_weights;
+            ar & m_ID;
+            ar & m_label;
+            ar & m_nodeType1;
+            ar & m_nodeType2;
+        }
+        template<class Archive>
+        void load(Archive & ar, const unsigned int version)
+        {
+            ar & m_weights;
+            ar & m_ID;
+            ar & m_label;
+            ar & m_nodeType1;
+            ar & m_nodeType2;
+        }
+        BOOST_SERIALIZATION_SPLIT_MEMBER()
+
     };
 
 }
+
+BOOST_CLASS_VERSION(UPGMpp::CEdgeType, 1)
 
 #endif //_UPGMpp_EDGE_TYPE_

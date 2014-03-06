@@ -20,21 +20,21 @@
  |                                                                           |
  *---------------------------------------------------------------------------*/
 
-
+#include <stdio.h>
 #include "decoding.hpp"
 
 using namespace UPGMpp;
 using namespace std;
-
+using namespace Eigen;
 
 
 /*------------------------------------------------------------------------------
 
-                                decodeICM
+                               CDecodeICM
 
 ------------------------------------------------------------------------------*/
 
-size_t UPGMpp::decodeICM( CGraph &graph, TOptions &options, std::map<size_t,size_t> &results )
+void CDecodeICM::decode( CGraph &graph, std::map<size_t,size_t> &results )
 {
     //cout << "Satarting ICM decoding..." << endl;
 
@@ -53,7 +53,7 @@ size_t UPGMpp::decodeICM( CGraph &graph, TOptions &options, std::map<size_t,size
     for ( size_t index = 0; index < N_nodes; index++ )
     {
         size_t nodeMAP;
-        size_t ID = nodes[index]->getId();
+        size_t ID = nodes[index]->getID();
 
         nodes[index]->getPotentials().maxCoeff(&nodeMAP);
         //cout << "Node potentials for " << ID << ": " << nodes[index]->getPotentials().transpose() << endl;
@@ -67,7 +67,7 @@ size_t UPGMpp::decodeICM( CGraph &graph, TOptions &options, std::map<size_t,size
     size_t iteration = 1;
 
     // Let's go!
-    while ( (keep_iterating) && ( iteration <= options.maxIterations ) )
+    while ( (keep_iterating) && ( iteration <= m_options.maxIterations ) )
     {
         bool changes = false;
 
@@ -76,11 +76,11 @@ size_t UPGMpp::decodeICM( CGraph &graph, TOptions &options, std::map<size_t,size
         for ( size_t index = 0; index < N_nodes; index++ )
         {
             Eigen::VectorXd potentials = nodes[index]->getPotentials();
-            size_t ID = nodes[index]->getId();
+            size_t nodeID = nodes[index]->getID();
 
             pair<multimap<size_t,CEdgePtr>::iterator,multimap<size_t,CEdgePtr>::iterator > neighbors;
 
-            neighbors = edges_f.equal_range(ID);
+            neighbors = edges_f.equal_range(nodeID);
 
             // Iterating over the neighbors, multiplying the potential of the
             // corresponding col. in the edgePotentials, according to their class
@@ -92,28 +92,40 @@ size_t UPGMpp::decodeICM( CGraph &graph, TOptions &options, std::map<size_t,size
                 CEdgePtr edgePtr( (*it).second );
 
                 edgePtr->getNodesID(ID1,ID2);
+                Eigen::MatrixXd edgePotentials = edgePtr->getPotentials();
 
-                ( ID1 == ID ) ? neighborID = ID2 : neighborID = ID1;
+                if ( ID1 == nodeID )
+                {
+                    neighborID = ID2;
+                    potentials = potentials.cwiseProduct(
+                                 edgePotentials.col(results[neighborID])
+                                 );
+                }
+                else
+                {
+                    neighborID = ID1;
+                    potentials = potentials.cwiseProduct(
+                                 edgePotentials.row(results[neighborID]).transpose()
+                                 );
+                }
 
                 //cout << "Testing edge <" << ID << "," << neighborID << ">" << endl;
-                Eigen::MatrixXd edgePotentials = edgePtr->getPotentials();
+
 
                 //cout << "Edge potentials" << edgePotentials.col(results[neighborID]) << endl;
 
-                potentials = potentials.cwiseProduct(
-                            edgePotentials.col(results[neighborID])
-                            );
+
             }
 
             //cout << "Potentials" << endl << potentials << endl;
             size_t class_res;
             potentials.maxCoeff(&class_res);
 
-            if ( class_res != results[ID] )
+            if ( class_res != results[nodeID] )
             {
                 changes = true;
-                size_t previous = results[ID];
-                results[ID] = class_res;
+                size_t previous = results[nodeID];
+                results[nodeID] = class_res;
 
                 //cout << "Changing node " << index << " from " << previous << " to " << class_res << endl;
             }
@@ -127,23 +139,17 @@ size_t UPGMpp::decodeICM( CGraph &graph, TOptions &options, std::map<size_t,size
         iteration++;
     }
 
-    if ( options.maxIterations < iteration )
-        return 0;
-    else
-        return 1;
-
     // TODO: It could be interesting return the case of stopping iterating
 }
 
 
 /*------------------------------------------------------------------------------
 
-                              decodeGreedy
+                              CDecodeGreedy
 
 ------------------------------------------------------------------------------*/
 
-size_t UPGMpp::decodeICMGreedy( CGraph &graph,
-                                TOptions &options,
+void CDecodeICMGreedy::decode( CGraph &graph,
                                 std::map<size_t,size_t> &results )
 {
 
@@ -164,7 +170,7 @@ size_t UPGMpp::decodeICMGreedy( CGraph &graph,
     for ( size_t index = 0; index < N_nodes; index++ )
     {
         size_t nodeMAP;
-        size_t ID = nodes[index]->getId();
+        size_t ID = nodes[index]->getID();
 
         nodes[index]->getPotentials().maxCoeff(&nodeMAP);
         results[ID] = nodeMAP;
@@ -180,14 +186,14 @@ size_t UPGMpp::decodeICMGreedy( CGraph &graph,
     map<size_t,size_t> new_results;
 
     // Let's go!
-    while ( (keep_iterating) && ( iteration <= options.maxIterations) )
+    while ( (keep_iterating) && ( iteration <= m_options.maxIterations) )
     {
 
         // Iterate over all the nodes, and check if a more promissing class
         // is waiting for us
         for ( size_t index = 0; index < N_nodes; index++ )
         {
-            size_t ID = nodes[index]->getId();
+            size_t ID = nodes[index]->getID();
 
             Eigen::VectorXd potentials = nodes[index]->getPotentials();
 
@@ -205,13 +211,22 @@ size_t UPGMpp::decodeICMGreedy( CGraph &graph,
                 CEdgePtr edgePtr( (*it).second );
 
                 edgePtr->getNodesID(ID1,ID2);
-
-                ( ID1 == ID ) ? neighborID = ID2 : neighborID = ID1;
-
-
                 Eigen::MatrixXd edgePotentials = edgePtr->getPotentials();
 
-                potentials = potentials.cwiseProduct( edgePotentials.col(results[neighborID]) );
+                if ( ID1 == ID )
+                {
+                    neighborID = ID2;
+                    potentials = potentials.cwiseProduct(
+                                 edgePotentials.col(results[neighborID])
+                                 );
+                }
+                else
+                {
+                    neighborID = ID1;
+                    potentials = potentials.cwiseProduct(
+                                 edgePotentials.row(results[neighborID]).transpose()
+                                 );
+                }
             }
 
             size_t class_res;
@@ -233,18 +248,12 @@ size_t UPGMpp::decodeICMGreedy( CGraph &graph,
         if ( max_difference > 0 )
         {
             v_potentials(node) = v_new_potentials(node);
-            size_t IDNodeToChange = nodes[node]->getId();
+            size_t IDNodeToChange = nodes[node]->getID();
             results[IDNodeToChange] = new_results[IDNodeToChange];
         }
         else
             keep_iterating = false;
     }
-
-    if ( options.maxIterations < iteration )
-        return 0;
-    else
-        return 1;
-
 
     // TODO: It could be interesting return the case of stopping iterating
 }
@@ -252,7 +261,7 @@ size_t UPGMpp::decodeICMGreedy( CGraph &graph,
 
 /*------------------------------------------------------------------------------
 
-                                decodeExact
+                               CDecodeExact
 
 ------------------------------------------------------------------------------*/
 
@@ -263,7 +272,7 @@ void decodeExactRec( CGraph &graph,
                 std::map<size_t,size_t> &results,
                 double &maxLikelihood);
 
-size_t UPGMpp::decodeExact(CGraph &graph, TOptions &options, std::map<size_t,size_t> &results, const std::map<size_t, vector<size_t> > &mask )
+void CDecodeExact::decode(CGraph &graph, std::map<size_t,size_t> &results )
 {
 
     results.clear();
@@ -273,9 +282,8 @@ size_t UPGMpp::decodeExact(CGraph &graph, TOptions &options, std::map<size_t,siz
     std::vector<CNodePtr> &nodes = graph.getNodes();
     size_t index = 0;
 
-    decodeExactRec( graph, mask, index, nodesAndValuesToTest, results, maxLikelihood);
+    decodeExactRec( graph, m_mask, index, nodesAndValuesToTest, results, maxLikelihood);
 
-    return 1;
 }
 
 void decodeExactRec( CGraph &graph,
@@ -286,7 +294,7 @@ void decodeExactRec( CGraph &graph,
                 double &maxLikelihood)
 {
     const CNodePtr node = graph.getNode( index );
-    const size_t  nodeID = node->getId();
+    const size_t  nodeID = node->getID();
     const CNodeTypePtr &nodeType = node->getType();
     size_t nodeClasses = nodeType->getClasses();
     size_t totalNodes = graph.getNodes().size();
@@ -310,12 +318,12 @@ void decodeExactRec( CGraph &graph,
             nodesAndValuesToTest[nodeID] = classToCheck;
             double likelihood = graph.getUnnormalizedLogLikelihood( nodesAndValuesToTest );
 
-            cout << "Testing..." ;
+            /*cout << "Testing..." ;
             for ( map<size_t,size_t>::iterator it = nodesAndValuesToTest.begin(); it != nodesAndValuesToTest.end(); it++ )
             {
                 std::cout << "[ID:" << it->first << " ,value " << it->second << "]";
             }
-            cout << " Likelihood: " << likelihood << " Max: " << maxLikelihood<< endl ;
+            cout << " Likelihood: " << likelihood << " Max: " << maxLikelihood<< endl ;*/
 
             if ( likelihood > maxLikelihood )
             {
@@ -329,4 +337,72 @@ void decodeExactRec( CGraph &graph,
             decodeExactRec( graph, mask, index + 1, nodesAndValuesToTest, results, maxLikelihood);
         }
     }
+}
+
+
+/*------------------------------------------------------------------------------
+
+                                CDecodeLBP
+
+------------------------------------------------------------------------------*/
+
+void CDecodeLBP::decode( CGraph &graph,
+                         std::map<size_t,size_t> &results )
+{
+    results.clear();
+    const vector<CNodePtr> nodes = graph.getNodes();
+    const vector<CEdgePtr> edges = graph.getEdges();
+    multimap<size_t,CEdgePtr> edges_f = graph.getEdgesF();
+
+    size_t N_nodes = nodes.size();
+    size_t N_edges = edges.size();
+
+    vector<vector<VectorXd> > messages;
+    messagesLBP( graph, m_options, messages );
+
+    //cout << "Convergency achieved in " << iteration << " interations";
+    //cout << " of a maximum of " << m_options.maxIterations << endl;
+
+    //
+    // Now that we have the messages, compute the final beliefs and fill the
+    // results map.
+    //
+
+    for ( size_t nodeIndex = 0; nodeIndex < N_nodes; nodeIndex++ )
+    {
+        const CNodePtr nodePtr = graph.getNode( nodeIndex );
+        size_t nodeID          = nodePtr->getID();
+        VectorXd nodePotPlusIncMsg = nodePtr->getPotentials();
+
+        pair<multimap<size_t,CEdgePtr>::iterator,multimap<size_t,CEdgePtr>::iterator > neighbors;
+
+        neighbors = edges_f.equal_range(nodeID);
+
+        //
+        // Get the messages for all the neighbors, and multiply them with the node potential
+        //
+        for ( multimap<size_t,CEdgePtr>::iterator itNeigbhor = neighbors.first;
+              itNeigbhor != neighbors.second;
+              itNeigbhor++ )
+        {
+            CEdgePtr edgePtr( (*itNeigbhor).second );
+            size_t edgeIndex = graph.getEdgeIndex( edgePtr->getID() );
+
+            if ( !edgePtr->getNodePosition( nodeID ) ) // nodeID is the first node in the edge
+                nodePotPlusIncMsg = nodePotPlusIncMsg.cwiseProduct(messages[ edgeIndex ][ 1 ]);
+            else // nodeID is the second node in the dege
+                nodePotPlusIncMsg = nodePotPlusIncMsg.cwiseProduct(messages[ edgeIndex ][ 0 ]);
+        }
+
+        // Normalize
+        nodePotPlusIncMsg = nodePotPlusIncMsg / nodePotPlusIncMsg.sum();
+
+        // Now the class with the higher value is the boss!
+        size_t nodeMAP;
+
+        nodePotPlusIncMsg.maxCoeff(&nodeMAP);
+
+        results[nodeID] = nodeMAP;
+    }
+
 }

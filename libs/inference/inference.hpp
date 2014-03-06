@@ -20,15 +20,9 @@
  |                                                                           |
  *---------------------------------------------------------------------------*/
 
-#ifndef _UPGMpp_BASE_
-#define _UPGMpp_BASE_
+#ifndef _UPGMpp_INFERENCE_
+#define _UPGMpp_INFERENCE_
 
-#include "CNodeType.hpp"
-#include "CEdgeType.hpp"
-#include "CNode.hpp"
-#include "CEdge.hpp"
-#include "CGraph.hpp"
-#include "base_utils.hpp"
 
 
 #endif

@@ -77,6 +77,30 @@ void updateEdgeTypeWeights( std::vector<Eigen::MatrixXi>& edgeWeightsMap,
 
 }
 
+
+/*------------------------------------------------------------------------------
+
+                              l2Regularization
+
+------------------------------------------------------------------------------*/
+
+double l2Regularization( const double *x, double *g , size_t n, CTrainingDataSet *td )
+{
+    TTrainingOptions &to = td->getTrainingOptions();
+
+    // Apply L-2 norm
+    double regularizationFactor = 0;
+    for ( size_t i = 0; i < n; i++ )
+    {
+        regularizationFactor += to.lambda[i]*(x[i]*x[i]);
+        g[i] += 2*to.lambda[i]*x[i];
+    }
+
+    return regularizationFactor;
+
+}
+
+
 /*------------------------------------------------------------------------------
 
                                 evaluate
@@ -137,19 +161,10 @@ static lbfgsfloatval_t evaluate(
         td->updateFunctionValueAndGradients( graphs[dataset], groundTruth[dataset], fx, x, g );
     }
 
-    double lambda = 10;
+    TTrainingOptions &to = td->getTrainingOptions();
 
-    // Apply L-2 norm
-    double regularizationFactor = 0;
-    for ( size_t i = 0; i < n; i++ )
-    {
-        regularizationFactor += lambda*(x[i]*x[i]);
-        g[i] += 2*lambda*x[i];
-    }
-
-    fx = fx + regularizationFactor;
-
-    //cout << "Regularized FX: " << fx << endl;
+    if ( to.l2Regularization )
+        fx = fx + l2Regularization( x, g, n, td );
 
     return fx;
 }
@@ -173,9 +188,17 @@ static int progress(
     int ls
     )
 {
-    cout << "Iteration " << k << endl;
-    cout << "  fx = " <<  fx << ", x[0] = " << x[0] << ", x[1] = " << x[1] << endl;
-    cout << "  xnorm = " << xnorm << ", gnorm = " << gnorm << ", step = " << step << endl << endl;
+    using namespace UPGMpp;
+    CTrainingDataSet *td = static_cast<CTrainingDataSet*>(instance);
+    TTrainingOptions &to = td->getTrainingOptions();
+
+    if ( to.showTrainingProgress )
+    {
+        cout << "Iteration " << k << endl;
+        cout << "  fx = " <<  fx << ", x[0] = " << x[0] << ", x[1] = " << x[1] << endl;
+        cout << "  xnorm = " << xnorm << ", gnorm = " << gnorm << ", step = " << step << endl << endl;
+
+    }
 
     return 0;
 }
@@ -243,9 +266,11 @@ void CTrainingDataSet::train()
         Eigen::VectorXi typeOfEdgeFeatures =
                                           m_typesOfEdgeFeatures[m_edgeTypes[i]];
 
+        cout << "Starting!" << endl;
+
         for ( size_t feature = 0; feature < N_features; feature++ )
         {
-            if ( typeOfEdgeFeatures(feature) == 0)
+            if ( typeOfEdgeFeatures(feature) == 0 )
             {
                 size_t N_cols = m_edgeTypes[i]->getWeights()[feature].cols();
                 size_t N_rows = m_edgeTypes[i]->getWeights()[feature].rows();
@@ -309,8 +334,8 @@ void CTrainingDataSet::train()
                 v_weightsMap[feature] = v_weightsMap[feature-1].transpose();
             }
 
-            cout << "Map for feature" << feature << endl;
-            cout << v_weightsMap[feature] << endl;
+            //cout << "Map for feature" << feature << endl;
+            //cout << v_weightsMap[feature] << endl;
         }
 
         m_edgeWeightsMap[m_edgeTypes[i]] = v_weightsMap;
@@ -318,7 +343,8 @@ void CTrainingDataSet::train()
         //cout << *m_edgeTypes[i] << endl;
     }
 
-    cout << "Number of weights" << N_weights << endl;
+    //cout << "Number of weights" << N_weights << endl;
+
     //
     //  2. Initialize the weights.
     //
@@ -335,6 +361,22 @@ void CTrainingDataSet::train()
 
     lbfgsfloatval_t fx;
     lbfgs_parameter_t param;
+
+    if ( m_trainingOptions.l2Regularization )
+    {
+        m_trainingOptions.lambda.resize(N_weights);
+
+        Eigen::MatrixXi &lastNodeMapMatrix = m_nodeWeightsMap[m_nodeTypes[m_nodeTypes.size()-1]];
+
+        size_t lastNodeWeight =
+                lastNodeMapMatrix(lastNodeMapMatrix.rows()-1,lastNodeMapMatrix.cols()-1);
+
+        for ( size_t i = 0; i < N_weights; i++ )
+            if ( i <= lastNodeWeight )
+                m_trainingOptions.lambda[i] = m_trainingOptions.nodeLambda;
+            else
+                m_trainingOptions.lambda[i] = m_trainingOptions.edgeLambda;
+    }
 
 
     if (x == NULL) {
@@ -375,17 +417,32 @@ void CTrainingDataSet::train()
 
     cout << "  fx = " << fx << ", x[0] = " << x[0] << ", x[1] = " << x[1] << endl;
 
-    cout << "Final x " << endl;
-    for ( size_t i=0; i < N_weights; i++ )
-            cout << "x[" << i << "] : " << x[i] << endl;
-
-    for ( size_t i = 0; i < m_edgeTypes.size(); i++ )
+    if ( m_trainingOptions.showTrainedWeights )
     {
-        cout << "Edge type " << m_edgeTypes[i]->getID() << endl;
-        for ( size_t feat = 0; feat < m_edgeTypes[i]->getWeights().size(); feat++)
-            cout << "Feature " << feat << " weights: " << endl << m_edgeTypes[i]->getWeights()[feat] << endl;
+        cout << "----------------------------------------------" << endl;
+
+        cout << "Final vector of weights (x): " << endl;
+        for ( size_t i=0; i < N_weights; i++ )
+                cout << "x[" << i << "] : " << x[i] << endl;
 
         cout << "----------------------------------------------" << endl;
+
+        for ( size_t i = 0; i < m_edgeTypes.size(); i++ )
+        {
+            cout << "Edge type " << m_edgeTypes[i]->getID() << endl;
+            for ( size_t feat = 0; feat < m_edgeTypes[i]->getWeights().size(); feat++)
+                cout << "Feature " << feat << " weights: " << endl << m_edgeTypes[i]->getWeights()[feat] << endl;
+
+            cout << "----------------------------------------------" << endl;
+        }
+
+        for ( size_t i = 0; i < m_nodeTypes.size(); i++ )
+        {
+            cout << "Node type " << m_nodeTypes[i]->getID() << endl;
+            cout << " weights: " << endl << m_nodeTypes[i]->getWeights() << endl;
+
+            cout << "----------------------------------------------" << endl;
+        }
     }
 
     lbfgs_free(x);
@@ -421,9 +478,9 @@ void CTrainingDataSet::updateFunctionValueAndGradients( CGraph &graph,
         Eigen::VectorXd potentials  = node->getPotentials();
         const Eigen::VectorXd &features = node->getFeatures();
 
-        size_t ID = node->getId();
+        size_t ID = node->getID();
 
-        // Multiply the node potentias with the
+        // Multiply the node potentias with the potentials of its neighbors
         pair<multimap<size_t,CEdgePtr>::iterator,multimap<size_t,CEdgePtr>::iterator > neighbors;
 
         neighbors = graph.getEdgesF().equal_range(ID);
@@ -438,14 +495,29 @@ void CTrainingDataSet::updateFunctionValueAndGradients( CGraph &graph,
 
             edgePtr->getNodesID(ID1,ID2);
 
+
+            //cout << "JARRRR" << endl;
+            //cout << "potentials" << potentials <<  endl;
+            //cout << "edge potentials" << edgePotentials << endl;
+            cout << "edge: " << endl << *edgePtr << endl;
+
             if ( ID1 == ID ) // The neighbor node indexes the columns
+            {
+                cout << "one" << endl;
                 potentials = potentials.cwiseProduct(
                                 edgePotentials.col( groundTruth[ID2] )
                                 );
+
+            }
             else // The neighbor node indexes the rows
+            {
+                cout << "two" << endl;
                 potentials = potentials.cwiseProduct(
                                 edgePotentials.row( groundTruth[ID1] ).transpose()
                                 );
+
+            }
+
         }
 
         // Update objective funciton value!!!

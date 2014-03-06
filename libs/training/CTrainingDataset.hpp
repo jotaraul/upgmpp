@@ -44,18 +44,35 @@ namespace UPGMpp
  *
  *---------------------------------------------------------------------------*/
 
+    struct TTrainingOptions
+    {
+        bool    showTrainingProgress;
+        bool    showTrainedWeights;
+        bool    l2Regularization;
+        double  nodeLambda;
+        double  edgeLambda;
+        std::vector<double>  lambda;
+
+        TTrainingOptions(): showTrainingProgress(true),
+                            showTrainedWeights(false),
+                            l2Regularization(false),
+                            nodeLambda(0),
+                            edgeLambda(0)
+        {}
+    };
 
     class CTrainingDataSet
     {
     private:
-        std::vector<CGraph> m_graphs;
-        std::vector<std::map<size_t,size_t> >      m_groundTruth;
+        std::vector<CGraph>          m_graphs;
+        std::vector<std::map<size_t,size_t> >   m_groundTruth;
         std::vector<CNodeTypePtr>    m_nodeTypes;
         std::vector<CEdgeTypePtr>    m_edgeTypes;
-        std::map<CEdgeTypePtr,Eigen::VectorXi>          m_typesOfEdgeFeatures;
+        std::map<CEdgeTypePtr,Eigen::VectorXi>  m_typesOfEdgeFeatures;
         size_t                       N_weights;
         std::map<CNodeTypePtr, Eigen::MatrixXi>              m_nodeWeightsMap;
         std::map<CEdgeTypePtr,std::vector<Eigen::MatrixXi> > m_edgeWeightsMap;
+        TTrainingOptions             m_trainingOptions;
 
     public:
 
@@ -63,6 +80,11 @@ namespace UPGMpp
 
         inline void setGroundTruth( std::vector<std::map<size_t,size_t> > &gt ) { m_groundTruth = gt; }
         inline void addGraphGroundTruth( std::map<size_t,size_t> &graph_gt ){ m_groundTruth.push_back( graph_gt ); }
+
+        inline void setTrainingOptions( const TTrainingOptions &trainingOptions)
+                                        { m_trainingOptions = trainingOptions; }
+        inline TTrainingOptions& getTrainingOptions()
+                                        { return m_trainingOptions; }
 
         inline std::vector<CGraph>& getGraphs(){ return m_graphs; }
         inline std::vector<CNodeTypePtr>& getNodeTypes(){ return m_nodeTypes; }

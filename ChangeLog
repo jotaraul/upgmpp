@@ -2,22 +2,31 @@ TODOs:
 
 - (1) Make the library robust to removed nodes or edges.
 - (4) Implement decoding method ICM with restarts.
-- (3) Implement exact (brute force) decoding method.
 - (2) Implement some approximated method for inference.
 - (3) Implement exact (brute force) inference method.
 - (3) Make the libray robust when dealing with nodes and edges of different types.
 - (2) Study and implement how to hallucinate objects and obtain their most probable location.
 
+Alpha 0.0.3 (04-03-2014)
+- [EXAMPLE] New example added for storing and loading a graphical model to/from file.
+- [BASE] Now graphical models can be serialized and stored into a file, as well as recovered from them.
+- [REFACTORING] The decoding library is now called inference.
+- [REFACTORING] Now decoding functions are classes, all of them childs of the abstract class CDecoder.
+- [EXAMPLE] Added example for the generation of synthetic data. This data is used to train and test the performance of a PGM.
+- [DECODING] Implemented LBP decoding algorithm.
+- [DECODING] Implemented Exact decoding.
+- [DECODING] Implemented Exact decoding with mask.
+- [BASE] Now the user can set the functions to compute the node and edge potentials.
 
-Alpha 0.0.2 (17-02-14):
-- Huge refactoring: The project has been split into a few libraries: base, training and decoding by the moment, but it is probable that the inference one will be added in the future.
-- An example of the use of the library for training has been created.
-- Now decoding methods can return the negative-log-likelihood of the result as well as the cause of stopping iterating.
-- libLBFGS added as dependency for training PGMs.
-- Development of the basic functinoality for training a PGM.
-- Documentation improved.
+Alpha 0.0.2 (17-02-2014):
+- [REFACTORING] Huge refactoring: The project has been split into a few libraries: base, training and decoding by the moment, but it is probable that the inference one will be added in the future.
+- [EXAMPLE] An example of the use of the library for training has been created.
+- [DECODING] Now decoding methods can return the negative-log-likelihood of the result as well as the cause of stopping iterating.
+- [TRAINING] libLBFGS added as dependency for training PGMs.
+- [TRAINING] Development of the basic functinoality for training a PGM.
+- [DOCUMENTATION] Documentation improved.
 
 
-Alpha 0.0.1 (13-02-14):
+Alpha 0.0.1 (13-02-2014):
 - Added two methods for decoding: ICM and GreedyICM.
 - Implemented basic data structures for building a PGM, namely: nodes and edges. 

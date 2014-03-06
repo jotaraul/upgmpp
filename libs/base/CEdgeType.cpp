@@ -20,15 +20,39 @@
  |                                                                           |
  *---------------------------------------------------------------------------*/
 
-#ifndef _UPGMpp_BASE_
-#define _UPGMpp_BASE_
 
-#include "CNodeType.hpp"
 #include "CEdgeType.hpp"
-#include "CNode.hpp"
-#include "CEdge.hpp"
-#include "CGraph.hpp"
-#include "base_utils.hpp"
+
+using namespace UPGMpp;
+using namespace std;
 
 
-#endif
+/*------------------------------------------------------------------------------
+
+                              linearModelEdge
+
+------------------------------------------------------------------------------*/
+
+Eigen::MatrixXd UPGMpp::linearModelEdge(vector<Eigen::MatrixXd> &weights, Eigen::VectorXd &features)
+{
+    size_t N_feat = weights.size();
+    // Compute the potential for each feature, and sum up them to obtain
+    // the desired edge potential
+    std::vector<Eigen::MatrixXd>    potentials_per_feat(N_feat);
+    Eigen::MatrixXd                 potentials;
+
+
+    for ( size_t feat = 0; feat < N_feat; feat++ )
+    {
+        potentials_per_feat.at(feat) = weights[feat]*features(feat);
+
+        if ( !feat )
+            potentials = potentials_per_feat[feat];
+        else
+            potentials += potentials_per_feat[feat];
+    }
+
+    potentials = potentials.array().exp();
+
+    return potentials;
+}

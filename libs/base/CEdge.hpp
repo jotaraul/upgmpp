@@ -23,11 +23,14 @@
 #ifndef _UPGMpp_EDGE_
 #define _UPGMpp_EDGE_
 
+#include "base_utils.hpp"
+
 #include <string>
 #include <Eigen/Dense>
 
 #include <iostream>
 #include <boost/shared_ptr.hpp>
+
 
 namespace UPGMpp
 {
@@ -47,33 +50,58 @@ namespace UPGMpp
         Eigen::VectorXd	m_features;     //!< Vector of extracted features for this edge.
         Eigen::MatrixXd	m_potentials;   //!< Computed potentials. Initially empty.
         CEdgeTypePtr       m_type;  //!< Pointer to the edge type.
-        size_t          m_id;       //!< ID of the edge. It is unique and automatically assigned.        
+        size_t          m_id;       //!< ID of the edge. It is unique and automatically assigned.
+
+        size_t setID() { static size_t ID = 0; return ID++; }
 
     public:
 
         /** Default constructor.
          */
-        CEdge() {}
+        CEdge()
+        {
+            m_id = setID();
+        }
 
         /** Additional constructor.
          */
         CEdge( CNodePtr n1,
                CNodePtr n2,
-               CEdgeTypePtr type) : m_type(type)
-        {
-            static size_t id = 0;
-            m_id = id;
-            id++;
+               CEdgeTypePtr type,
+               Eigen::VectorXd &features ) : m_type(type)
+        {            
+            m_id = setID();
 
-            if ( n1->getType()->getID() > n2->getType()->getID() )
+            // Check that features are a column vector, and transpose it  otherwise
+            ( features.cols() > 1 ) ?
+                        m_features = features
+                      : m_features = features.transpose();
+
+            if ( n1->getType()->getID() != n2->getType()->getID() )
             {
-                m_n1 = n2;
-                m_n2 = n1;
+                if ( n1->getType()->getID() == type->getN1Type()->getID() )
+                {                    
+                    m_n1 = n1;
+                    m_n2 = n2;
+                }
+                else
+                {                    
+                    m_n1 = n2;
+                    m_n2 = n1;
+                }
             }
             else
             {
-                m_n1 = n1;
-                m_n2 = n2;
+                if ( n1->getType()->getID() > n2->getType()->getID() )
+                {                    
+                    m_n1 = n2;
+                    m_n2 = n1;
+                }
+                else
+                {                    
+                    m_n1 = n1;
+                    m_n2 = n2;
+                }
             }
         }
 
@@ -83,21 +111,42 @@ namespace UPGMpp
                CNodePtr    &n2,
                CEdgeTypePtr   type,
                Eigen::VectorXd &features,
-               Eigen::MatrixXd &potentials) : m_features(features), m_potentials(potentials), m_type(type)
+               Eigen::MatrixXd &potentials) : m_potentials(potentials), m_type(type)
         {
-            static size_t id = 0;
-            m_id = id;
-            id++;
 
-            if ( n1->getType()->getID() > n2->getType()->getID() )
+            m_id = setID();
+
+            // Check that features are a column vector, and transpose it  otherwise
+            ( features.cols() > 1 ) ?
+                        m_features = features
+                      : m_features = features.transpose();
+
+
+            if ( n1->getType()->getID() != n2->getType()->getID() )
             {
-                m_n1 = n2;
-                m_n2 = n1;
+                if ( n1->getType()->getID() == type->getN1Type()->getID() )
+                {
+                    m_n1 = n1;
+                    m_n2 = n2;
+                }
+                else
+                {
+                    m_n1 = n2;
+                    m_n2 = n1;
+                }
             }
             else
             {
-                m_n1 = n1;
-                m_n2 = n2;
+                if ( n1->getType()->getID() > n2->getType()->getID() )
+                {
+                    m_n1 = n2;
+                    m_n2 = n1;
+                }
+                else
+                {
+                    m_n1 = n1;
+                    m_n2 = n2;
+                }
             }
         }
 
@@ -105,7 +154,7 @@ namespace UPGMpp
         /**	Function for retrieving the ID of the edge.
           * \return The ID of the edge.
           */
-        inline size_t getId(){ return m_id; }
+        inline size_t getID(){ return m_id; }
 
 
         inline CEdgeTypePtr getType() const { return m_type; }
@@ -113,30 +162,60 @@ namespace UPGMpp
 
         inline void getNodes ( CNodePtr &n1, CNodePtr &n2 ) const { n1 = m_n1; n2 = m_n2; }
 
-        inline size_t getSecondNodeID () const { return m_n2->getId(); }
+        inline size_t getNodePosition ( size_t ID )
+        {
+            if ( m_n1->getID() == ID )
+                return 0;
+            else
+                return 1;
+        }
 
-        void getNodesID( size_t &ID1, size_t &ID2 ){ ID1= m_n1->getId(); ID2 = m_n2->getId(); }
+        inline size_t getFirstNodeID () const { return m_n1->getID(); }
+
+        inline size_t getSecondNodeID () const { return m_n2->getID(); }
+
+        void getNodesID( size_t &ID1, size_t &ID2 ){ ID1= m_n1->getID(); ID2 = m_n2->getID(); }
 
 
         inline Eigen::VectorXd getFeatures() const { return m_features; }
 
         inline Eigen::VectorXd& getFeatures(){ return m_features; }
 
-        inline void setFeatures( const Eigen::VectorXd &features) { m_features = features; }
+        inline void setFeatures( const Eigen::VectorXd &features)
+        {
+            // Check that features are a column vector, and transpose it  otherwise
+            ( features.cols() > 1 ) ?
+                        m_features = features
+                      : m_features = features.transpose();
+
+        }
 
 
         inline Eigen::MatrixXd getPotentials() const { return m_potentials; }
 
         inline void setPotentials ( Eigen::MatrixXd &potentials ) { m_potentials = potentials; }
 
+        Eigen::VectorXd getNeighborPotentialsForNodeFixedValue( size_t nodeID, size_t neighborClass )
+        {
+
+            if ( nodeID == m_n1->getID() )
+            {
+                return m_potentials.col( neighborClass );
+            }
+            else
+            {
+                return m_potentials.row( neighborClass ).transpose();
+            }
+
+        }
 
         friend std::ostream& operator<<(std::ostream& output, const CEdge& e)
         {
             CNodePtr n1, n2;
             e.getNodes( n1, n2);
 
-            output << "n1:" << n1->getId() << std::endl ;
-            output << "n2:" << n2->getId() << std::endl ;
+            output << "n1 ID:" << n1->getID() << std::endl ;
+            output << "n2 ID:" << n2->getID() << std::endl ;
 
             output << "features:" << e.getFeatures() << std::endl ;
             output << "potentials:" << e.getPotentials() << std::endl ;
@@ -145,7 +224,40 @@ namespace UPGMpp
             return output;
         }
 
+
+        //
+        //  Serialization stuff
+        //
+        friend class boost::serialization::access;
+
+        template<class Archive>
+        void save(Archive & ar, const unsigned int version) const
+        {
+            // note, version is always the latest when saving
+            ar & m_n1;
+            ar & m_n2;
+            ar << m_features;
+            ar << m_potentials;
+            ar & m_type;
+            ar & m_id;
+        }
+        template<class Archive>
+        void load(Archive & ar, const unsigned int version)
+        {
+            ar & m_n1;
+            ar & m_n2;
+            ar >> m_features;
+            ar >> m_potentials;
+            ar & m_type;
+            ar & m_id;
+        }
+        BOOST_SERIALIZATION_SPLIT_MEMBER()
+
     };
+
 }
+
+BOOST_CLASS_VERSION(UPGMpp::CEdge, 1)
+
 
 #endif

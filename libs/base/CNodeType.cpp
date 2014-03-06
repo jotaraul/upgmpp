@@ -20,15 +20,22 @@
  |                                                                           |
  *---------------------------------------------------------------------------*/
 
-#ifndef _UPGMpp_BASE_
-#define _UPGMpp_BASE_
 
 #include "CNodeType.hpp"
-#include "CEdgeType.hpp"
-#include "CNode.hpp"
-#include "CEdge.hpp"
-#include "CGraph.hpp"
-#include "base_utils.hpp"
+
+using namespace UPGMpp;
+using namespace std;
 
 
-#endif
+/*------------------------------------------------------------------------------
+
+                              linearModelNode
+
+------------------------------------------------------------------------------*/
+
+Eigen::VectorXd UPGMpp::linearModelNode(Eigen::MatrixXd &weights, Eigen::VectorXd &features)
+{
+    Eigen::VectorXd potentials = weights * features;
+
+    return potentials.array().exp();
+}

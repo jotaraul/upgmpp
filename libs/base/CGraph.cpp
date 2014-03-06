@@ -57,16 +57,7 @@ void CGraph::computePotentials()
         // Compute the node potentials according to the node type and its
         // extracted features
 
-        Eigen::VectorXd potentials = nodePtr->getType()->getWeights() * nodePtr->getFeatures();
-
-        //cout << "+++++++++++++++++++++++++++++++" << endl;
-
-        //cout << "Weights : " << nodePtr->getType()->getWeights() << endl;
-        //cout << "Features: " << nodePtr->getFeatures().transpose() << endl;
-
-        //cout << "Pre exp: " << potentials.transpose() << endl;
-        potentials = potentials.array().exp();
-        //cout << "Post exp: " << potentials.transpose() << endl;
+        Eigen::VectorXd potentials = nodePtr->getType()->computePotentials( nodePtr->getFeatures() );
 
         //std::cout << potentials << std::endl << "----------------" << std::endl;
 
@@ -84,34 +75,10 @@ void CGraph::computePotentials()
 
     for ( it2 = m_edges.begin(); it2 != m_edges.end(); it2++ )
     {
-        // Get the edge type, its extracted features and the number of them
         CEdgePtr edgePtr = *it2;
-        size_t type = edgePtr->getType()->getID();
 
-        Eigen::VectorXd v_feat = edgePtr->getFeatures();
-        size_t num_feat = edgePtr->getType()->getWeights().size();
-
-        // Compute the potential for each feature, and sum up them to obtain
-        // the desired edge potential
-        std::vector<Eigen::MatrixXd>    potentials_per_feat(num_feat);
-        Eigen::MatrixXd potentials;
-
-
-        for ( size_t feat = 0; feat < num_feat; feat++ )
-        {
-            potentials_per_feat.at(feat) = edgePtr->getType()->getWeights()[feat]*v_feat(feat);
-
-            if ( !feat )
-                potentials = potentials_per_feat[feat];
-            else
-                potentials += potentials_per_feat[feat];
-        }
-
-        potentials = potentials.array().exp();
-
-
-        //std::cout <<  potentials << std::endl;
-        //cout << "=======================================" << endl;
+        Eigen::MatrixXd potentials
+                = edgePtr->getType()->computePotentials( edgePtr->getFeatures() );
 
         edgePtr->setPotentials ( potentials );
     }
@@ -138,7 +105,7 @@ double CGraph::getUnnormalizedLogLikelihood( std::map<size_t,size_t> &classes)
     for ( it = classes.begin(); it != classes.end(); it++ )
     {
         CNodePtr node = getNodeWithID( it->first );
-        unlikelihood *= node->getPotentials()(classes[node->getId()]);
+        unlikelihood *= node->getPotentials()(classes[node->getID()]);
     }
 
     for ( size_t index = 0; index < N_edges; index++ )
@@ -146,8 +113,8 @@ double CGraph::getUnnormalizedLogLikelihood( std::map<size_t,size_t> &classes)
         CEdgePtr edge = m_edges[index];
         CNodePtr n1, n2;
         edge->getNodes(n1,n2);
-        size_t ID1 = n1->getId();
-        size_t ID2 = n2->getId();
+        size_t ID1 = n1->getID();
+        size_t ID2 = n2->getID();
 
         if ( ID1 > ID2 )            
             unlikelihood *= edge->getPotentials()(classes[ID2],classes[ID1]);
@@ -161,3 +128,4 @@ double CGraph::getUnnormalizedLogLikelihood( std::map<size_t,size_t> &classes)
 
     return unlikelihood;
 }
+

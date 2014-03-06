@@ -25,6 +25,8 @@ endif(COMMAND cmake_policy)
  
 list(APPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/cmake)
 
+set(LIB_PREFIX "libUPGMpp-")
+
 # EIGEN
 find_package(Eigen3 REQUIRED)
 include_directories(${EIGEN3_INCLUDE_DIR})
@@ -34,7 +36,7 @@ set(Boost_USE_STATIC_LIBS OFF)
 set(Boost_USE_MULTITHREADED ON)  
 set(Boost_USE_STATIC_RUNTIME OFF) 
 
-find_package(Boost 1.55.0 COMPONENTS filesystem REQUIRED) 
+find_package(Boost 1.55.0 COMPONENTS filesystem serialization REQUIRED) 
 
 include_directories(${Boost_INCLUDE_DIRS}) 
 
@@ -59,7 +61,7 @@ find_path(libLBGS_LIBRARY_DIR "./" CACHE FILEPATH "Directory of the libBFGS libr
 
 
 # Create UPGM++ libraries and add include directories to the examples
-SET( UPGM++_LIBRARIES "base;training;decoding" )
+SET( UPGM++_LIBRARIES "base;training;inference" )
 
 FOREACH( LIBRARY ${UPGM++_LIBRARIES} )
 	ADD_SUBDIRECTORY(libs/${LIBRARY})
@@ -81,33 +83,13 @@ IF(UNIX)
 	LINK_DIRECTORIES("${CMAKE_CURRENT_SOURCE_DIR}")
 ENDIF(UNIX)
 
-
-
-
-
-set(LIB_PREFIX "libUPGMpp-")
-
 # Create examples
-SET( UPGM++_EXAMPLES "training_example;synthetic_scenarios_example" )
+SET( UPGM++_EXAMPLES "training_example;synthetic_scenarios_example;different_node_types;saving_and_loading_graphs" )
 
 FOREACH( EXAMPLE ${UPGM++_EXAMPLES} )
 	# Define the executable target:
 	ADD_EXECUTABLE(${EXAMPLE} ${CMAKE_SOURCE_DIR}/examples/${EXAMPLE}/example.cpp)
 	# Link the executable
-        TARGET_LINK_LIBRARIES(${EXAMPLE} base training decoding)
+        TARGET_LINK_LIBRARIES(${EXAMPLE} base training inference ${Boost_LIBRARIES})
 ENDFOREACH( EXAMPLE ${UPGM++_EXAMPLES} )
-
-# Define the executable target:
-#ADD_EXECUTABLE(${PROJECT_NAME} ${SRCS})
-#ADD_EXECUTABLE(${PROJECT_NAME} WIN32 ${SRCS})
-
-# Add needed libraries to the linker:
-#TARGET_LINK_LIBRARIES( ${PROJECT_NAME} ${libLBGS_LIBRARY_DIR}lbfgs.o)
-
-##  Copy the configuration file:
-#CONFIGURE_FILE(
-#	"${CMAKE_SOURCE_DIR}/${PROJECT_NAME}.ini"
-#	"${CMAKE_BINARY_DIR}/${PROJECT_NAME}.ini"
-#	@ONLY)
-
 

@@ -20,15 +20,55 @@
  |                                                                           |
  *---------------------------------------------------------------------------*/
 
-#ifndef _UPGMpp_BASE_
-#define _UPGMpp_BASE_
+#ifndef _UPGMpp_DECODING_
+#define _UPGMpp_DECODING_
 
-#include "CNodeType.hpp"
-#include "CEdgeType.hpp"
-#include "CNode.hpp"
-#include "CEdge.hpp"
-#include "CGraph.hpp"
-#include "base_utils.hpp"
+#include "base.hpp"
+#include "inference_utils.hpp"
 
+namespace UPGMpp
+{
+    class CMAPDecoder
+    {
+    protected:
+        TInferenceOptions                       m_options;
+        std::map<size_t,std::vector<size_t> >   m_mask;
+
+    public:
+
+        virtual void decode( CGraph &graph, std::map<size_t,size_t> &results ) = 0;
+
+        inline void setOptions ( TInferenceOptions &options ) { m_options = options; }
+
+        inline void setMask ( std::map<size_t,std::vector<size_t> > &mask )
+            { m_mask = mask; }
+
+    };
+
+    class CDecodeICM : public CMAPDecoder
+    {
+    public:
+        void decode( CGraph &graph, std::map<size_t,size_t> &results );
+    };
+
+    class CDecodeICMGreedy : public CMAPDecoder
+    {
+    public:
+        void decode(CGraph &graph, std::map<size_t, size_t> &results);
+    };
+
+    class CDecodeExact : public CMAPDecoder
+    {
+    public:
+        void decode(CGraph &graph, std::map<size_t, size_t> &results);
+    };
+
+    class CDecodeLBP : public CMAPDecoder
+    {
+    public:
+        void decode(CGraph &graph, std::map<size_t, size_t> &results);
+    };
+
+}
 
 #endif

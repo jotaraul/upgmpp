@@ -23,6 +23,8 @@
 #ifndef _UPGMpp_NODE_TYPE_
 #define _UPGMpp_NODE_TYPE_
 
+#include "base_utils.hpp"
+
 #include <string>
 #include <Eigen/Dense>
 
@@ -38,6 +40,14 @@ namespace UPGMpp
     /** Useful type definitions */
     typedef boost::shared_ptr<CNodeType> CNodeTypePtr;
 
+    /** Function used to compute the potentials of a node of this type. It can
+     * be set by the user ;). This does:
+     * nodePotential = exp(weight_1*feature_1),..,exp(weight_n*feature_n).
+     * \param weights: Matrix of weights trained for this node type.
+     * \param features: Features of the node.
+     * \return The node potentials.
+     */
+    extern Eigen::VectorXd linearModelNode( Eigen::MatrixXd &weights, Eigen::VectorXd &features );
 
     class CNodeType
     {
@@ -50,6 +60,9 @@ namespace UPGMpp
         Eigen::MatrixXd m_weights;     //!< Matrix of weights. Rows are classes and columns are features
         size_t          m_ID;          //!< ID of the NodeType. Must be unique (transparent to the user).
         std::string     m_label;       //!< Human readable label. Not mandatory.
+        Eigen::VectorXd (*m_computePotentialsFunction)( Eigen::MatrixXd &, Eigen::VectorXd &); //!< Pointer to the function that computes the node potentials
+
+        size_t setID() const { static size_t ID = 0; return ID++; }
 
     public:
 
@@ -57,20 +70,21 @@ namespace UPGMpp
           */
         CNodeType()
         {
-            static size_t ID = 0;
-            m_ID = ID;
-            ID++;
+            m_computePotentialsFunction = &linearModelNode;
+
+            m_ID = setID();
         }
 
         /** Adittional constructor
          */
-        CNodeType( size_t N_classes, size_t N_features )
+        CNodeType( size_t N_classes, size_t N_features, std::string label = "" )
         {
-            static size_t ID = 0;
-            m_ID = ID;
-            ID++;
+            m_computePotentialsFunction = &linearModelNode;
+
+            m_ID = setID();
 
             m_weights.resize( N_classes, N_features );
+            m_label = label;
         }
 
         /**	Function for retrieving the ID of the node type.
@@ -109,6 +123,9 @@ namespace UPGMpp
           */
         inline Eigen::MatrixXd& getWeights(){ return m_weights; }
 
+        /** Get the number of classes (states) of nodes of this type.
+         * \return Number of classes.
+         */
         inline size_t getClasses() { return m_weights.rows(); }
 
 
@@ -122,7 +139,50 @@ namespace UPGMpp
             return output;
         }
 
+        /** Compute the potential of a node according to the weights and its
+         * features.
+         * \param features: features of the node.
+         * \return potentials of that node.
+         */
+        Eigen::VectorXd computePotentials( Eigen::VectorXd &features )
+        {
+            return (*m_computePotentialsFunction)(m_weights,features);
+        }
+
+        /** Set the function for computing the potentials
+         * \param newFunction: the new function for computing the potentials.
+         */
+        void setComputePotentialsFunction ( Eigen::VectorXd (*newFunction)( Eigen::MatrixXd &, Eigen::VectorXd &) )
+        {
+            m_computePotentialsFunction = newFunction;
+        }
+
+        //
+        //  Serialization stuff
+        //
+        friend class boost::serialization::access;
+
+        template<class Archive>
+        void save(Archive & ar, const unsigned int version) const
+        {
+            // note, version is always the latest when saving            
+            ar & m_weights;
+            ar & m_ID;
+            ar & m_label;
+        }
+        template<class Archive>
+        void load(Archive & ar, const unsigned int version)
+        {
+            ar & m_weights;
+            ar & m_ID;
+            ar & m_label;
+        }
+        BOOST_SERIALIZATION_SPLIT_MEMBER()
+
     };
+
 }
+
+BOOST_CLASS_VERSION(UPGMpp::CNodeType, 1)
 
 #endif //_UPGMpp_NODE_TYPE_

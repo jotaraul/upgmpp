@@ -28,6 +28,7 @@
 #include "CEdgeType.hpp"
 #include "CNode.hpp"
 #include "CEdge.hpp"
+#include "base_utils.hpp"
 
 #include <string>
 #include <vector>
@@ -52,7 +53,7 @@ namespace UPGMpp
 
         CGraph() {}
 
-        inline void     addNode( CNodePtr node ) { m_nodes.push_back(node); }
+        inline void     addNode( CNodePtr node ) { m_nodes.push_back(node); }        
         inline CNodePtr getNode( size_t index ) { return m_nodes[index]; }
         inline void     getNodes( std::vector<CNodePtr> &v_nodes ) const { v_nodes = m_nodes; }
         inline std::vector<CNodePtr>& getNodes(  ) { return m_nodes; }
@@ -63,20 +64,30 @@ namespace UPGMpp
             std::vector<CNodePtr>::iterator it;
 
             for ( it = m_nodes.begin(); it != m_nodes.end(); it++ )
-                if ( it->get()->getId() == id )
+                if ( it->get()->getID() == id )
                     return *it;
         }
 
         inline void getEdges( std::vector<CEdgePtr> &v_edges ) const { v_edges = m_edges; }
+        inline std::vector<CEdgePtr> getEdges() { return m_edges; }
         inline CEdgePtr getEdge( size_t index ){ return m_edges[index]; }
+
+        double getEdgeIndex ( size_t edgeID )
+        {
+            for ( size_t i = 0; i < m_edges.size(); i++ )
+                if ( edgeID == m_edges[i]->getID() )
+                    return i;
+
+            return -1;
+        }
 
         void addEdge( CEdgePtr edge )
         {
 
             CNodePtr n1, n2;
             edge->getNodes(n1,n2);
-            size_t n1_id = n1->getId();
-            size_t n2_id = n2->getId();
+            size_t n1_id = n1->getID();
+            size_t n2_id = n2->getID();
 
             m_edges.push_back(edge);
             size_t size = m_edges.size();
@@ -96,7 +107,7 @@ namespace UPGMpp
             {
                 CNodePtr nodePtr = *it;
 
-                if ( nodePtr->getId() == id )
+                if ( nodePtr->getID() == id )
                     break;
             }
 
@@ -146,9 +157,59 @@ namespace UPGMpp
         void computePotentials();
 
         double getUnnormalizedLogLikelihood( std::map<size_t,size_t> &classes );
+
+        //
+        //  Serialization stuff
+        //
+        friend class boost::serialization::access;
+
+        template<class Archive>
+        void save(Archive & ar, const unsigned int version) const
+        {
+            // note, version is always the latest when saving
+            ar & m_nodes;
+            ar & m_edges;
+
+            size_t N_fields = m_edges_f.size();
+
+            ar & N_fields;
+
+            std::multimap<size_t,CEdgePtr>::const_iterator it;
+            for ( it = m_edges_f.begin(); it != m_edges_f.end(); it++ )
+            {
+                ar & it->first;
+                ar & it->second;
+            }
+        }
+        template<class Archive>
+        void load(Archive & ar, const unsigned int version)
+        {
+            ar & m_nodes;
+            ar & m_edges;
+
+            size_t N_fields;
+
+            ar & N_fields;
+
+            for ( size_t i = 0; i < N_fields; i++ )
+            {
+                size_t ID;
+                CEdgePtr edgePtr;
+
+                ar & ID;
+                ar & edgePtr;
+
+                m_edges_f.insert( std::pair<size_t, CEdgePtr> ( ID , edgePtr) );
+            }
+        }
+        BOOST_SERIALIZATION_SPLIT_MEMBER()
+
     };
 
 }
+
+BOOST_CLASS_VERSION(UPGMpp::CGraph, 1)
+
 
 #endif
 

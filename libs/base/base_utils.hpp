@@ -20,15 +20,38 @@
  |                                                                           |
  *---------------------------------------------------------------------------*/
 
-#ifndef _UPGMpp_BASE_
-#define _UPGMpp_BASE_
+#ifndef _UPGMpp_BASE_UTILS_
+#define _UPGMpp_BASE_UTILS_
 
-#include "CNodeType.hpp"
-#include "CEdgeType.hpp"
-#include "CNode.hpp"
-#include "CEdge.hpp"
-#include "CGraph.hpp"
-#include "base_utils.hpp"
+#include <boost/serialization/list.hpp>
+#include <boost/serialization/string.hpp>
+#include <boost/serialization/version.hpp>
+#include <boost/serialization/split_member.hpp>
+#include <boost/serialization/shared_ptr.hpp>
+#include <boost/serialization/vector.hpp>
 
+#include <Eigen/Dense>
+
+using namespace Eigen;
+
+namespace boost
+{
+template<class Archive, typename _Scalar, int _Rows, int _Cols, int _Options, int _MaxRows, int _MaxCols>
+inline void serialize(
+    Archive & ar,
+    Matrix<_Scalar, _Rows, _Cols, _Options, _MaxRows, _MaxCols> & t,
+    const unsigned int file_version
+)
+{
+    size_t rows = t.rows(), cols = t.cols();
+    ar & rows;
+    ar & cols;
+    if( rows * cols != t.size() )
+    t.resize( rows, cols );
+
+    for(size_t i=0; i<t.size(); i++)
+    ar & t.data()[i];
+}
+}
 
 #endif
