@@ -62,6 +62,8 @@ namespace UPGMpp
         std::string     m_label;       //!< Human readable label. Not mandatory.
         Eigen::VectorXd (*m_computePotentialsFunction)( Eigen::MatrixXd &, Eigen::VectorXd &); //!< Pointer to the function that computes the node potentials
 
+        /** Private function for obtaning the ID of a new node type.
+         */
         size_t setID() const { static size_t ID = 0; return ID++; }
 
     public:
@@ -126,7 +128,7 @@ namespace UPGMpp
         /** Get the number of classes (states) of nodes of this type.
          * \return Number of classes.
          */
-        inline size_t getClasses() { return m_weights.rows(); }
+        inline size_t getNumberOfClasses() { return m_weights.rows(); }
 
 
         /**	Function for prompting the content of a node type

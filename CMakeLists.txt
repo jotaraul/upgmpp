@@ -84,7 +84,7 @@ IF(UNIX)
 ENDIF(UNIX)
 
 # Create examples
-SET( UPGM++_EXAMPLES "training_example;synthetic_scenarios_example;different_node_types;saving_and_loading_graphs" )
+SET( UPGM++_EXAMPLES "different_node_types;MAP_and_marginal_inference;pre_computed_weights;saving_and_loading_graphs;synthetic_data;training_example" )
 
 FOREACH( EXAMPLE ${UPGM++_EXAMPLES} )
 	# Define the executable target:

@@ -23,6 +23,40 @@
 #ifndef _UPGMpp_INFERENCE_
 #define _UPGMpp_INFERENCE_
 
+#include "base.hpp"
+#include "inference_utils.hpp"
 
+namespace UPGMpp
+{
+    class CInference
+    {
+    protected:
+
+        TInferenceOptions                       m_options;
+        std::map<size_t,std::vector<size_t> >   m_mask; //!< This makes sense in inference?
+
+    public:
+
+        virtual void infer(CGraph &graph,
+                           std::map<size_t,Eigen::VectorXd> &nodeBeliefs,
+                           std::map<size_t,Eigen::MatrixXd> &edgeBeliefs,
+                           double &logZ) = 0;
+
+        inline void setOptions ( TInferenceOptions &options ) { m_options = options; }
+
+        inline void setMask ( std::map<size_t,std::vector<size_t> > &mask )
+            { m_mask = mask; }
+
+    };
+
+    class CLBPInference : public CInference
+    {
+    public:
+        void infer(CGraph &graph,
+                   std::map<size_t,Eigen::VectorXd> &nodeBeliefs,
+                   std::map<size_t,Eigen::MatrixXd> &edgeBeliefs,
+                   double &logZ);
+    };
+}
 
 #endif

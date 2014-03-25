@@ -22,6 +22,7 @@
 
 
 #include "base.hpp"
+#include "inference.hpp"
 #include "training.hpp"
 #include "decoding.hpp"
 
@@ -31,9 +32,35 @@
 using namespace UPGMpp;
 using namespace std;
 
+/*---------------------------------------------------------------------------*
+ *  This example shows how the library can be used with nodes of different types.
+ *
+ * For example, let's consider that you are building a system to recognize
+ * people, namely Juan, Pepe and Luis. It makes sense to use a PGM since Juan
+ * often stays in the same room as Luis, but seldom Luis is in the same one that
+ * Pepe. It also makes sense to use the kind of room where they are found, given
+ * that Pepe loves to watch TV. So, your system will make use of two different
+ * types of nodes: person and room, and two different types of edges as well:
+ * person-person and room-person.
+ *
+ * The followin example shows how to perform that idea with a toy example. It's
+ * workflow is:
+ *
+ *  1. Generate the different node and edge types.
+ *  2. Create some scenarios with nodes and edges.
+ *  3. Train a PGM with that scenarios.
+ *  4. Perform a MAP inference (decoding) to check that the system performance.
+ *
+ *---------------------------------------------------------------------------*/
 
 int main (int argc, char* argv[])
 {
+
+    cout << "---------------------------------------------------" << endl;
+    cout << endl;
+    cout << "Example of how to use different node and edge types" << endl;
+    cout << endl;
+
 
 /*------------------------------------------------------------------------------
  *
@@ -42,10 +69,8 @@ int main (int argc, char* argv[])
  *----------------------------------------------------------------------------*/
 
     //
-    // Generate the types of nodes and edges
-    //
-
-    CTrainingDataSet trainingDataset;
+    // 1. Generate the node and edge types
+    //   
 
     size_t N_classes_type_1        = 2;
     size_t N_nodeFeatures_type_1   = 3;
@@ -55,16 +80,16 @@ int main (int argc, char* argv[])
     size_t N_nodeFeatures_type_2   = 2;
     size_t N_edgeFeatures_type_2   = 2;
 
-    // OBJECTS
+    // PERSONS
 
     CNodeTypePtr simpleNodeType1Ptr( new CNodeType(N_classes_type_1,
                                                    N_nodeFeatures_type_1,
-                                                   string("Objects") ) );
+                                                   string("Persons") ) );
 
     CEdgeTypePtr simpleEdgeType1Ptr ( new CEdgeType(N_edgeFeatures_type_1,
                                                     simpleNodeType1Ptr,
                                                     simpleNodeType1Ptr,
-                                                    string("Edges between two objects")) );
+                                                    string("Edges between two persons")) );
 
     // ROOMS
 
@@ -75,8 +100,14 @@ int main (int argc, char* argv[])
     CEdgeTypePtr simpleEdgeType2Ptr ( new CEdgeType(N_edgeFeatures_type_2,
                                                     simpleNodeType1Ptr,
                                                     simpleNodeType2Ptr,
-                                                    "Edges between an object and a room") );
+                                                    "Edges between a person and a room") );
 
+    // Add the node and edge types to the trainingDataset
+
+    CTrainingDataSet trainingDataset;
+
+    // Since the edge between a room and a person is asymetric and probably with
+    // a different number of classes, we need to especify that.
 
     Eigen::VectorXi typeOfEdgeFeatures( N_edgeFeatures_type_2 );
     typeOfEdgeFeatures << 1,1;
@@ -87,7 +118,8 @@ int main (int argc, char* argv[])
     trainingDataset.addEdgeType( simpleEdgeType2Ptr, typeOfEdgeFeatures );
 
     //
-    // Create a set of training graphs
+    // 2. Create some scenarios with nodes and edges and add them to the
+    //    training dataset.
     //
 
 /*--------------------------------- Graph 1 ----------------------------------*/
@@ -163,8 +195,6 @@ int main (int argc, char* argv[])
     groundTruth2[ nodePtr12->getID() ] = 1;
     groundTruth2[ nodePtr22->getID() ] = 1;
 
-    //cout << "GRAPH2: " << endl << graph2 << endl;
-
     trainingDataset.addGraph( graph2 );
     trainingDataset.addGraphGroundTruth( groundTruth2 );
 
@@ -203,8 +233,6 @@ int main (int argc, char* argv[])
     groundTruth3[ nodePtr13->getID() ] = 0;
     groundTruth3[ nodePtr23->getID() ] = 1;
 
-    //cout << "GRAPH3: " << endl << graph3 << endl;
-
     trainingDataset.addGraph( graph3 );
     trainingDataset.addGraphGroundTruth( groundTruth3 );
 
@@ -215,14 +243,24 @@ int main (int argc, char* argv[])
  *
  *----------------------------------------------------------------------------*/
 
+    //
+    // 3.  Train a PGM with that scenarios.
+    //
+
+    cout << "---------------------------------------------------" << endl;
+    cout << "                    Training" << endl;
+    cout << "---------------------------------------------------" << endl;
+
     UPGMpp::TTrainingOptions to;
     to.l2Regularization     = true;
     to.nodeLambda           = 10;
     to.edgeLambda           = 1;
-    to.showTrainedWeights   = true;
+    to.showTrainedWeights   = false;
+    to.showTrainingProgress = false;
 
     trainingDataset.setTrainingOptions( to );
     trainingDataset.train();
+
 
 /*------------------------------------------------------------------------------
  *
@@ -230,9 +268,9 @@ int main (int argc, char* argv[])
  *
  *----------------------------------------------------------------------------*/
 
-    graph.computePotentials();
-    graph2.computePotentials();
-    graph3.computePotentials();
+    //
+    // 4. Perform a MAP inference (decoding) to check that the system performance.
+    //
 
     //
     // Build a graph to test the trained model
@@ -270,25 +308,21 @@ int main (int argc, char* argv[])
     groundTruth4[ nodePtr14->getID() ] = 0;
     groundTruth4[ nodePtr24->getID() ] = 0;
 
-    graph4.computePotentials();
-
-    //cout << "GRAPH4: " << endl << graph4 << endl;
+    graph4.computePotentials();    
 
     //
-    // Now compute the MAP and show the results
+    // Now compute the MAP decoding and show the results
     //
 
     CDecodeICM          decodeICM;
-    CDecodeICMGreedy    decodeICMGreedy;
-    CDecodeExact        decodeExact;
-    CDecodeLBP          decodeLBP;
 
     TInferenceOptions options;
     options.maxIterations   = 100;
     options.convergency     = 0.0001;
 
-
-    cout << "ICM decoding"<< endl;
+    cout << "---------------------------------------------------" << endl;
+    cout << "                  ICM decoding"<< endl;
+    cout << "---------------------------------------------------" << endl;
 
     std::map<size_t,size_t> resultsMap;
 
@@ -299,45 +333,13 @@ int main (int argc, char* argv[])
 
     for ( it = resultsMap.begin(); it != resultsMap.end(); it++ )
     {
-        std::cout << "Node id " << it->first << " labeled as " << it->second << std::endl;
+        std::cout << "Node id " << it->first << " labeled as " << it->second <<
+                     " being of class " << groundTruth4[it->first] << std::endl;
     }
 
+    cout << "---------------------------------------------------" << endl;
 
-    cout << "ICM Greedy decoding"<< endl;
-
-    decodeICMGreedy.setOptions( options );
-    decodeICMGreedy.decode( graph4, resultsMap );
-
-    for ( it = resultsMap.begin(); it != resultsMap.end(); it++ )
-    {
-        std::cout << "Node id " << it->first << " labeled as " << it->second << std::endl;
-    }
-
-
-    cout << "Exact decoding"<< endl;
-
-    decodeExact.setOptions( options );
-    decodeExact.decode( graph4, resultsMap );
-
-    for ( it = resultsMap.begin(); it != resultsMap.end(); it++ )
-    {
-        std::cout << "Node id " << it->first << " labeled as " << it->second << std::endl;
-    }
-
-
-    cout << "LBP decoding" << endl;
-
-    decodeLBP.setOptions( options );
-    decodeLBP.decode( graph4, resultsMap );
-
-    for ( it = resultsMap.begin(); it != resultsMap.end(); it++ )
-    {
-        std::cout << "Node id " << it->first << " labeled as " << it->second << std::endl;
-    }
-
-
-
-    // We are ready to take a beer :)
+    // We are ready to do some sport :)
 
     return 1;
 }

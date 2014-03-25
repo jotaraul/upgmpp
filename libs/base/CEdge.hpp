@@ -51,7 +51,10 @@ namespace UPGMpp
         Eigen::MatrixXd	m_potentials;   //!< Computed potentials. Initially empty.
         CEdgeTypePtr       m_type;  //!< Pointer to the edge type.
         size_t          m_id;       //!< ID of the edge. It is unique and automatically assigned.
+        bool            m_handCodedPotentials;
 
+        /** Private function for obtaning the ID of a new edge.
+         */
         size_t setID() { static size_t ID = 0; return ID++; }
 
     public:
@@ -72,11 +75,14 @@ namespace UPGMpp
         {            
             m_id = setID();
 
-            // Check that features are a column vector, and transpose it  otherwise
+            // Check that features are a column vector, and transpose it otherwise
             ( features.cols() > 1 ) ?
                         m_features = features
                       : m_features = features.transpose();
 
+            // The first node is always the one with the lower type of ID node.
+            // If they share the same type of node, then the first node is
+            // always the one with the lower node ID.
             if ( n1->getType()->getID() != n2->getType()->getID() )
             {
                 if ( n1->getType()->getID() == type->getN1Type()->getID() )
@@ -92,7 +98,7 @@ namespace UPGMpp
             }
             else
             {
-                if ( n1->getType()->getID() > n2->getType()->getID() )
+                if ( n1->getID() > n2->getID() )
                 {                    
                     m_n1 = n2;
                     m_n2 = n1;
@@ -121,7 +127,9 @@ namespace UPGMpp
                         m_features = features
                       : m_features = features.transpose();
 
-
+            // The first node is always the one with the lower type of ID node.
+            // If they share the same type of node, then the first node is
+            // always the one with the lower node ID.
             if ( n1->getType()->getID() != n2->getType()->getID() )
             {
                 if ( n1->getType()->getID() == type->getN1Type()->getID() )
@@ -137,7 +145,7 @@ namespace UPGMpp
             }
             else
             {
-                if ( n1->getType()->getID() > n2->getType()->getID() )
+                if ( n1->getID() > n2->getID() )
                 {
                     m_n1 = n2;
                     m_n2 = n1;
@@ -156,12 +164,22 @@ namespace UPGMpp
           */
         inline size_t getID(){ return m_id; }
 
-
+        /** Function for getting the edge type.
+         * \return A copy of the edge
+         */
         inline CEdgeTypePtr getType() const { return m_type; }
 
-
+        /** Function for retrieving the two nodes linked by the edge.
+         * \param n1: First node of the edge.
+         * \param n2: Second node of the edge.
+         */
         inline void getNodes ( CNodePtr &n1, CNodePtr &n2 ) const { n1 = m_n1; n2 = m_n2; }
 
+        /** This method allows the user to ask about the position of a node in
+         * the edge. Is this the first or the second node?
+         * \param ID: ID of the node.
+         * \return 0 if it is the first node, 1 otherwise.
+         */
         inline size_t getNodePosition ( size_t ID )
         {
             if ( m_n1->getID() == ID )
@@ -170,17 +188,37 @@ namespace UPGMpp
                 return 1;
         }
 
+        /** Get the ID of the first node.
+         * \return ID of the fist node.
+         */
         inline size_t getFirstNodeID () const { return m_n1->getID(); }
 
+        /** Get the ID of the second node.
+         * \return ID of the second node.
+         */
         inline size_t getSecondNodeID () const { return m_n2->getID(); }
 
+        /** Get the ID of both nodes.
+         * \param ID1: ID of the first node.
+         * \param ID2: ID of the second node.
+         */
         void getNodesID( size_t &ID1, size_t &ID2 ){ ID1= m_n1->getID(); ID2 = m_n2->getID(); }
 
-
+        /** This method permits the users to get the edge features.
+         * \return A copy of the vector of edge features.
+         */
         inline Eigen::VectorXd getFeatures() const { return m_features; }
 
+        /** This method permits the users to get a reference to the edge features.
+         * Take care with the reference! You could unintentionally change the
+         * vector values from your code.
+         * \return A reference to the vector of edge features.
+         */
         inline Eigen::VectorXd& getFeatures(){ return m_features; }
 
+        /** Set the edge features.
+         * \param features: Vector of features.
+         */
         inline void setFeatures( const Eigen::VectorXd &features)
         {
             // Check that features are a column vector, and transpose it  otherwise
@@ -190,11 +228,44 @@ namespace UPGMpp
 
         }
 
-
+        /** Get a copy of the edge potentials.
+         * \return A copy of the edge potentials.
+         */
         inline Eigen::MatrixXd getPotentials() const { return m_potentials; }
 
+        /** Get a reference to the edge potentials.
+         * \return A reference to the edge potentials.
+         */
+        inline Eigen::MatrixXd & getPotentials() { return m_potentials; }
+
+        /** Set the edge potentials.
+         * \param potentials: Matrix of new edge potentials.
+         */
         inline void setPotentials ( Eigen::MatrixXd &potentials ) { m_potentials = potentials; }
 
+        /** Set the edege potentials and make them final, so they will be not
+         * computed again depending on the features. This permits the user to
+         * work with Markov Random Fields in addition to Conditional Random
+         * Fields.
+         * \param potentials: Matrix of final edge potentials.
+         */
+        void setFinalPotentials( Eigen::MatrixXd &potentials )
+        {
+            m_potentials = potentials;
+            m_handCodedPotentials = true;
+        }
+
+        /** Returns if the potentials of the edge were set manually and then are final.
+         *  \return True if the edge potentials were set manually, false
+         *           otherwise.
+         */
+        inline bool finalPotentials(){ return m_handCodedPotentials; }
+
+        /** If the value of a node is fixed, get the edge potentials for the
+         * neighbor node considering that fixed value.
+         * \param nodeID: ID of the node.
+         * \param neighborClass: fixed value.
+         */
         Eigen::VectorXd getNeighborPotentialsForNodeFixedValue( size_t nodeID, size_t neighborClass )
         {
 
@@ -209,6 +280,9 @@ namespace UPGMpp
 
         }
 
+        /**	Function for prompting the content of an edge.
+          * \return An stream with the edge information dumped into it.
+          */
         friend std::ostream& operator<<(std::ostream& output, const CEdge& e)
         {
             CNodePtr n1, n2;

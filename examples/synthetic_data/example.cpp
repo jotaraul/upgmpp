@@ -121,7 +121,7 @@ int main (int argc, char* argv[])
     trainingDataset.addEdgeType( edgeType1Ptr, typeOfEdgeFeatures );
 
     // Number of scenarios
-    size_t N_syntheticTrainingSamples = 2000;
+    size_t N_syntheticTrainingSamples = 200;
 
     //
     // Create the scenarios!

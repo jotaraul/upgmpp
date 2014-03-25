@@ -51,17 +51,26 @@ void CGraph::computePotentials()
     for ( it = m_nodes.begin(); it != m_nodes.end(); it++ )
     {
         CNodePtr nodePtr = *it;
-        // Get the node type
-        size_t type = nodePtr->getType()->getID();
 
-        // Compute the node potentials according to the node type and its
-        // extracted features
+        if ( !nodePtr->finalPotentials() )
+        {
+            // Get the node type
+            size_t type = nodePtr->getType()->getID();
 
-        Eigen::VectorXd potentials = nodePtr->getType()->computePotentials( nodePtr->getFeatures() );
+            // Compute the node potentials according to the node type and its
+            // extracted features
 
-        //std::cout << potentials << std::endl << "----------------" << std::endl;
+            Eigen::VectorXd potentials = nodePtr->getType()->computePotentials( nodePtr->getFeatures() );
 
-        nodePtr->setPotentials( potentials );
+            // Apply the node class multipliers
+            potentials = potentials.cwiseProduct( nodePtr->getClassMultipliers() );
+
+            /*Eigen::VectorXd fixed = nodePtr->getFixed();
+
+            potentials = potentials.cwiseProduct( fixed );*/
+
+            nodePtr->setPotentials( potentials );
+        }
 
     }
 
@@ -93,7 +102,6 @@ void CGraph::computePotentials()
 
 double CGraph::getUnnormalizedLogLikelihood( std::map<size_t,size_t> &classes)
 {
-    // TODO: This method is not robust against the deletion of nodes or edges
 
     double unlikelihood = 1;
 
@@ -122,7 +130,6 @@ double CGraph::getUnnormalizedLogLikelihood( std::map<size_t,size_t> &classes)
             unlikelihood *= edge->getPotentials()(classes[ID1],classes[ID2]);
 
     }
-
 
     unlikelihood = std::log( unlikelihood );
 

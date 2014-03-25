@@ -2,10 +2,15 @@ TODOs:
 
 - (1) Make the library robust to removed nodes or edges.
 - (4) Implement decoding method ICM with restarts.
-- (2) Implement some approximated method for inference.
 - (3) Implement exact (brute force) inference method.
-- (3) Make the libray robust when dealing with nodes and edges of different types.
 - (2) Study and implement how to hallucinate objects and obtain their most probable location.
+- (1) Add unit test cases.
+
+Alpha 0.0.4 (10-03-2014)
+- [BASE] Now nodes have also a vector of class multipliers, which can be used to add some prior information to the PGM.
+- [INFERENCE] Finally implemented LBP for inference (marginal probabilities computation).
+- [BASE] Now the value of a node can be set to a given class, and it will be taken into account in the inference methods.
+- [BASE] Now the node and edge potentials can be set manually and never computed again employing the setFinalPotentials() function.
 
 Alpha 0.0.3 (04-03-2014)
 - [EXAMPLE] New example added for storing and loading a graphical model to/from file.

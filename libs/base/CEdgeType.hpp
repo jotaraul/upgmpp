@@ -66,6 +66,8 @@ namespace UPGMpp
         CNodeTypePtr m_nodeType1; //!< Node type of the first node.
         CNodeTypePtr m_nodeType2; //!< Node type of the second node.
 
+        /** Private function for obtaning the ID of a new edge type.
+         */
         size_t setID(){ static size_t ID = 0; return ID++; }
 
     public:
@@ -101,16 +103,16 @@ namespace UPGMpp
                 m_nodeType1 = nodeType1;
                 m_nodeType2 = nodeType2;
 
-                N_classes_1 = nodeType1->getClasses();
-                N_classes_2 = nodeType2->getClasses();
+                N_classes_1 = nodeType1->getNumberOfClasses();
+                N_classes_2 = nodeType2->getNumberOfClasses();
             }
             else
             {
                 m_nodeType1 = nodeType2;
                 m_nodeType2 = nodeType1;
 
-                N_classes_1 = nodeType2->getClasses();
-                N_classes_2 = nodeType1->getClasses();
+                N_classes_1 = nodeType2->getNumberOfClasses();
+                N_classes_2 = nodeType1->getNumberOfClasses();
             }
 
             // Create the vector of matrices of weights, one per edge feature

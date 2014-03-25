@@ -43,36 +43,89 @@ namespace UPGMpp
 
     class CGraph
     {
+        /**
+          * This class defines the structure and common functions for a graph
+          * representing an Undirected Probabilistic Graphical Model.
+          **/
     private:
 
-        std::multimap<size_t,CEdgePtr>   m_edges_f;
-        std::vector<CEdgePtr>            m_edges;
-        std::vector<CNodePtr>            m_nodes;
+        std::multimap<size_t,CEdgePtr>   m_edges_f; //!< Vectof of fast access to all the edges where a node appears.
+        std::vector<CEdgePtr>            m_edges;   //!< Vector of graph edges.
+        std::vector<CNodePtr>            m_nodes;   //!< Vector of graph nodes.
 
     public:
 
+        /** Default constructor */
         CGraph() {}
 
+        /** Function for adding a node to the graph.
+         * \param node: Smart pointer to the node to add.
+         */
         inline void     addNode( CNodePtr node ) { m_nodes.push_back(node); }        
+
+        /** Get the graph node laying in a certain position of the vector of nodes.
+         * \param index: Node position in that vector.
+         * \return A copy of the smart pointer laying in that position.
+         */
         inline CNodePtr getNode( size_t index ) { return m_nodes[index]; }
+
+        /** This method allows the user to get a copy of the graph's nodes.
+         *  \param v_nodes: Vector of nodes to be filled.
+         */
         inline void     getNodes( std::vector<CNodePtr> &v_nodes ) const { v_nodes = m_nodes; }
+
+        /** Get the number of neighbors that a node has.
+         * \param nodeID: ID of the node.
+         * \return The number of node neighbors.
+         */
+        inline size_t   getNumberOfNodeNeighbors( size_t nodeID ){ return m_edges_f.count( nodeID ); }
+
+        /** Get a reference to the vector of nodes. The user has to take care
+         * using this function, since he/her unintentionally could change it.
+         * \return A reference to the vector of nodes.
+         */
         inline std::vector<CNodePtr>& getNodes(  ) { return m_nodes; }
+
+        /** Get a reference to the map of nodes and their edges. The user has to take care
+         * using this function, since he/her unintentionally could change it.
+         * \return A reference to the map of nodes and their edges.
+         */
         inline std::multimap<size_t,CEdgePtr>& getEdgesF(){ return m_edges_f; }
 
-        CNodePtr getNodeWithID( size_t id )
+        /** Get a copy of the node with a given ID.
+         * \param ID: node ID.
+         * \return Copy of the node.
+         */
+        CNodePtr getNodeWithID( size_t ID )
         {
             std::vector<CNodePtr>::iterator it;
 
             for ( it = m_nodes.begin(); it != m_nodes.end(); it++ )
-                if ( it->get()->getID() == id )
+                if ( it->get()->getID() == ID )
                     return *it;
         }
 
+        /** Get the vector of edges.
+         * \param v_edges: vector to copy the edge smart pointers.
+         */
         inline void getEdges( std::vector<CEdgePtr> &v_edges ) const { v_edges = m_edges; }
+
+        /** Get the vector of edges.
+         * \return v_edges: a copy of the vector of edge smart pointers.
+         */
         inline std::vector<CEdgePtr> getEdges() { return m_edges; }
+
+        /** Get a certain edge given its position in the edges vector.
+         * \param index: Position in the edges vector.
+         * \return Smart pointer to the edge.
+         */
         inline CEdgePtr getEdge( size_t index ){ return m_edges[index]; }
 
-        double getEdgeIndex ( size_t edgeID )
+        /** Get the index of an edge in the edges vector given its ID.
+         * \param edgeID: ID of the edge.
+         * \return Position of that object in the edges vector.
+         */
+        size_t getEdgeIndex ( size_t edgeID )
         {
             for ( size_t i = 0; i < m_edges.size(); i++ )
                 if ( edgeID == m_edges[i]->getID() )
@@ -81,6 +134,9 @@ namespace UPGMpp
             return -1;
         }
 
+        /** Add an edge to the graph.
+         * \param edge: Smart pointer to the edge.
+         */
         void addEdge( CEdgePtr edge )
         {
 
@@ -97,7 +153,11 @@ namespace UPGMpp
             m_edges_f.insert( std::pair<size_t, CEdgePtr> (n2_id,edge) );
         }
 
-        void deleteNode( size_t id )
+        /** Delete a node from the graph. It could also produce the deletion of
+         * its associated edges.
+         * \param ID: ID of the node to delete from the graph.
+         */
+        void deleteNode( size_t ID )
         {
             // Remove from the vector of nodes
 
@@ -107,14 +167,14 @@ namespace UPGMpp
             {
                 CNodePtr nodePtr = *it;
 
-                if ( nodePtr->getID() == id )
+                if ( nodePtr->getID() == ID )
                     break;
             }
 
             if ( it != m_nodes.end() )
                 m_nodes.erase( it );
 
-            // Remove edges than contain that node
+            // Remove edges than contain that node from m_edges and m_edges_f
 
             std::vector<CEdgePtr>::iterator it2;
 
@@ -125,14 +185,69 @@ namespace UPGMpp
 
                 edgePtr->getNodesID( ID1, ID2 );
 
-                if ( ( ID1 == id ) || ( ID2 == id )  )
-                    m_edges.erase( it2 );
+                if ( ( ID1 == ID ) || ( ID2 == ID )  )
+                    deleteEdge( edgePtr->getID() );
             }
-
-            // TODO: Remove edges from fast access structure
 
         }
 
+        /** Delete and edge from the graph.
+         * \param ID: ID of the edge.
+         */
+        void deleteEdge( size_t ID )
+        {
+            CEdgePtr edgePtr;
+
+            std::vector<CEdgePtr>::iterator it;
+            for ( it = m_edges.begin(); it != m_edges.end(); it++ )
+            {
+                if ( (*it)->getID() == ID )
+                {
+                    edgePtr = *it;
+                    break;
+                }
+            }
+
+            if ( it != m_edges.end() )
+            {
+                // Delete the edge from the m_edge_f multimap
+
+                size_t ID1, ID2;
+                edgePtr->getNodesID(ID1,ID2);
+
+                std::multimap<size_t,CEdgePtr>::iterator it_n1= m_edges_f.find( ID1 );
+
+                for ( ; it_n1 != m_edges_f.end(); it_n1++ )
+                {
+                    if ( (it_n1->second)->getID() == ID )
+                    {
+                        m_edges_f.erase( it_n1 );
+                        break;
+                    }
+                }
+
+                std::multimap<size_t,CEdgePtr>::iterator it_n2= m_edges_f.find( ID2 );
+
+                for ( ; it_n2 != m_edges_f.end(); it_n2++ )
+                {
+                    if ( (it_n2->second)->getID() == ID )
+                    {
+                        m_edges_f.erase( it_n2 );
+                        break;
+                    }
+                }
+
+
+                // Delete the edge from the edges vector
+                m_edges.erase( it );
+            }
+        }
+
+        /** Method for dumping a graph to a stream.
+         * \param output: output stream.
+         * \param g: graph to dump.
+         * \return A reference to the output stream.
+         */
         friend std::ostream& operator<<(std::ostream& output, const CGraph& g)
         {
             std::vector<CNodePtr> v_nodes;
@@ -154,8 +269,16 @@ namespace UPGMpp
             return output;
         }
 
+        /** Function for computing the potentials of the nodes and the edges in
+         * the graph.
+         */
         void computePotentials();
 
+        /** This method permits the user to get the unnormalized log likelihood
+         * of the graph given a certain assignation to all its nodes.
+         * \param classes: Classes assignation to all the nodes.
+         * \return Unnormalized log likelihood.
+         */
         double getUnnormalizedLogLikelihood( std::map<size_t,size_t> &classes );
 
         //

@@ -266,8 +266,6 @@ void CTrainingDataSet::train()
         Eigen::VectorXi typeOfEdgeFeatures =
                                           m_typesOfEdgeFeatures[m_edgeTypes[i]];
 
-        cout << "Starting!" << endl;
-
         for ( size_t feature = 0; feature < N_features; feature++ )
         {
             if ( typeOfEdgeFeatures(feature) == 0 )
@@ -415,7 +413,7 @@ void CTrainingDataSet::train()
         cout << "L-BFGS terminated with error code : " << ret << endl;
     }
 
-    cout << "  fx = " << fx << ", x[0] = " << x[0] << ", x[1] = " << x[1] << endl;
+    cout << "  fx = " << fx << endl;
 
     if ( m_trainingOptions.showTrainedWeights )
     {
@@ -499,24 +497,18 @@ void CTrainingDataSet::updateFunctionValueAndGradients( CGraph &graph,
             //cout << "JARRRR" << endl;
             //cout << "potentials" << potentials <<  endl;
             //cout << "edge potentials" << edgePotentials << endl;
-            cout << "edge: " << endl << *edgePtr << endl;
+            //cout << "edge: " << endl << *edgePtr << endl;
 
-            if ( ID1 == ID ) // The neighbor node indexes the columns
-            {
-                cout << "one" << endl;
+            if ( ID1 == ID ) // The neighbor node indexes the columns            
                 potentials = potentials.cwiseProduct(
                                 edgePotentials.col( groundTruth[ID2] )
                                 );
 
-            }
-            else // The neighbor node indexes the rows
-            {
-                cout << "two" << endl;
+
+            else // The neighbor node indexes the rows            
                 potentials = potentials.cwiseProduct(
                                 edgePotentials.row( groundTruth[ID1] ).transpose()
                                 );
-
-            }
 
         }
 

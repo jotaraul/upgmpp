@@ -55,10 +55,8 @@ void CDecodeICM::decode( CGraph &graph, std::map<size_t,size_t> &results )
         size_t nodeMAP;
         size_t ID = nodes[index]->getID();
 
-        nodes[index]->getPotentials().maxCoeff(&nodeMAP);
-        //cout << "Node potentials for " << ID << ": " << nodes[index]->getPotentials().transpose() << endl;
-        results[ID] = nodeMAP;
-        //cout << "nodeMap" << nodeMAP << endl;
+        nodes[index]->getPotentials( m_options.considerNodeFixedValues ).maxCoeff(&nodeMAP);
+        results[ID] = nodeMAP;        
     }
 
     // Set the stop conditions
@@ -75,7 +73,7 @@ void CDecodeICM::decode( CGraph &graph, std::map<size_t,size_t> &results )
         // is waiting for us
         for ( size_t index = 0; index < N_nodes; index++ )
         {
-            Eigen::VectorXd potentials = nodes[index]->getPotentials();
+            Eigen::VectorXd potentials = nodes[index]->getPotentials( m_options.considerNodeFixedValues );
             size_t nodeID = nodes[index]->getID();
 
             pair<multimap<size_t,CEdgePtr>::iterator,multimap<size_t,CEdgePtr>::iterator > neighbors;
@@ -172,7 +170,7 @@ void CDecodeICMGreedy::decode( CGraph &graph,
         size_t nodeMAP;
         size_t ID = nodes[index]->getID();
 
-        nodes[index]->getPotentials().maxCoeff(&nodeMAP);
+        nodes[index]->getPotentials( m_options.considerNodeFixedValues ).maxCoeff(&nodeMAP);
         results[ID] = nodeMAP;
         v_potentials(index) = 0; //std::numeric_limits<double>::min();
     }
@@ -195,7 +193,7 @@ void CDecodeICMGreedy::decode( CGraph &graph,
         {
             size_t ID = nodes[index]->getID();
 
-            Eigen::VectorXd potentials = nodes[index]->getPotentials();
+            Eigen::VectorXd potentials = nodes[index]->getPotentials( m_options.considerNodeFixedValues );
 
             pair<multimap<size_t,CEdgePtr>::iterator,multimap<size_t,CEdgePtr>::iterator > neighbors;
 
@@ -296,7 +294,7 @@ void decodeExactRec( CGraph &graph,
     const CNodePtr node = graph.getNode( index );
     const size_t  nodeID = node->getID();
     const CNodeTypePtr &nodeType = node->getType();
-    size_t nodeClasses = nodeType->getClasses();
+    size_t nodeClasses = nodeType->getNumberOfClasses();
     size_t totalNodes = graph.getNodes().size();
     vector<size_t> classesToCheck;
 
@@ -372,7 +370,7 @@ void CDecodeLBP::decode( CGraph &graph,
     {
         const CNodePtr nodePtr = graph.getNode( nodeIndex );
         size_t nodeID          = nodePtr->getID();
-        VectorXd nodePotPlusIncMsg = nodePtr->getPotentials();
+        VectorXd nodePotPlusIncMsg = nodePtr->getPotentials( m_options.considerNodeFixedValues );
 
         pair<multimap<size_t,CEdgePtr>::iterator,multimap<size_t,CEdgePtr>::iterator > neighbors;
 
