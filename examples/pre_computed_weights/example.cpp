@@ -42,10 +42,21 @@ using namespace std;
  * weights to use to compute the potentials, maybe obtained from your favourite
  * optimizer external to this library.
  *
+ * The example steps are:
+ * 1. Loading of the pre-computed weights.
+ * 2. Set of the node and edge types using that weights.
+ * 3. Building of an example graph.
+ * 4. MAP inference computation for that graph.
+ *
  *---------------------------------------------------------------------------*/
 
 int main (int argc, char* argv[])
 {
+
+    cout << endl;
+    cout << "       " << "PRE-COMPUTED WEIGHTS EXAMPLE";
+    cout << endl << endl;
+
 
 /*------------------------------------------------------------------------------
  *
@@ -432,31 +443,33 @@ int main (int argc, char* argv[])
                              0;
 
 
+/*------------------------------------------------------------------------------
+ *
+ *                      SET OF NODE AND EDGE TYPES
+ *
+ *----------------------------------------------------------------------------*/
+
+    //
+    // Node types
+    //
+
+
     //
     // Feature multipliers
     //
 
     // In feature engineering, usually features are multiplied by a factor in
     // order to scale them and do classes more distinguishable. The previous
-    // weights were learnt using these factors, so we have to employ it again
+    // weights were learnt using these factors, so we have to employ them again
     // while recognizing a new scene in order to make it consistent.
 
     Eigen::VectorXd nodeFeatMultiplierFactor(5);
     nodeFeatMultiplierFactor << 50, 90, 60, 50, 50;
 
-    Eigen::VectorXd edgeFeatMultiplierFactor(4);
-    edgeFeatMultiplierFactor << 1, 1, 50, 1;
-
-    // Edge features to use
-
-    Eigen::VectorXi edgeFeaturesToUse(6);
-    edgeFeaturesToUse << 1, 1, 0, 0, 1, 1;
-
-    // Types of nodes
-
+    // This matrix maps the node weights into the vector of weights w.
     Eigen::MatrixXi nodeMapAux;
 
-    nodeMapAux.resize(5,12);
+    nodeMapAux.resize(5,12); // 12 classes, 5 features per class
 
     nodeMapAux << 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12,
             13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24,
@@ -472,11 +485,16 @@ int main (int argc, char* argv[])
 
     nodeWeights.resize(N_rows,N_cols);
 
+    // Build the nodeWeights matrix
+
     for ( size_t i = 0; i < N_rows; i++ )
         for ( size_t j = 0; j < N_cols; j++ )
         {
             nodeWeights(i,j) = w(nodeMap(i,j)-1);
         }
+
+
+    // Ok, create the node type!
 
     size_t N_classes = nodeWeights.rows();
     size_t N_nodeFeatures = nodeWeights.cols();
@@ -487,20 +505,34 @@ int main (int argc, char* argv[])
 
     std::string label("Object");
     nodeType1->setLabel( label );
+
     nodeType1->setWeights( nodeWeights );
 
+    //
     // Types of edges
-
-    size_t f = 61;
-    size_t first_f = 61;
+    //
 
     std::vector<Eigen::MatrixXi> edgeWeightsMap;
+
+    // Edge features to use
+
+    Eigen::VectorXd edgeFeatMultiplierFactor(4);
+    edgeFeatMultiplierFactor << 1, 1, 50, 1;
+
+    // Here we can choose the edge features that we want to use. 1 means use
+    // this feature, 0 please leave it away.
+    Eigen::VectorXi edgeFeaturesToUse(6);
+    edgeFeaturesToUse << 1, 1, 0, 0, 1, 1;
+
     size_t N_edgeFeatures = edgeFeaturesToUse.sum();
 
     edgeWeightsMap.resize(N_edgeFeatures);
 
     for (size_t i = 0; i < N_edgeFeatures; i++ )
         edgeWeightsMap[i].resize(N_classes,N_classes);
+
+    size_t f = 61;
+    size_t first_f = 61;
 
     for ( size_t edge_feat = 0; edge_feat < N_edgeFeatures; edge_feat++ )
     {
@@ -521,8 +553,6 @@ int main (int argc, char* argv[])
             size_t previousW = first_f;
 
             edgeWeightsMap[edge_feat](0,0) = first_f;
-
-            //  edgeMap(1,1,:,edgeFeat) = firstW;
 
             for ( size_t c3 = 1; c3 < N_classes; c3++ )
             {
@@ -553,10 +583,6 @@ int main (int argc, char* argv[])
                 edgeWeights[edge_feat](c1,c2) = w(edgeWeightsMap[edge_feat](c1,c2)-1);
             }
 
-    //std::cout << "Edge weights 0:" << std::endl << edgeWeights[0] << std::endl;
-    //std::cout << "Edge weights 1:" << std::endl << edgeWeights[1] << std::endl;
-    //std::cout << "Edge weights 2:" << std::endl << edgeWeights[2] << std::endl;
-    //std::cout << "Edge weights 1:" << std::endl << edgeWeights[3] << std::endl;
 
     CEdgeTypePtr edgeType1 ( new CEdgeType( N_edgeFeatures,
                                             nodeType1,
@@ -565,23 +591,19 @@ int main (int argc, char* argv[])
     edgeType1->setWeights( edgeWeights );
 
 
-
-
+/*------------------------------------------------------------------------------
+ *
+ *                      BUILDING OF AN EXAMPLE GRAPH
+ *
+ *----------------------------------------------------------------------------*/
 
     CGraph myGraph;
 
+    //
+    // Nodes
+    //
 
-
-
-
-    /*--------------------------------------------------------------------------
-     *
-     *                                  NODES
-     *
-     *-------------------------------------------------------------------------*/
-
-    Eigen::Matrix<double,11,5> node_features;
-
+    Eigen::Matrix<double,11,5> node_features; // 11 objects, 5 features per object
 
     // Features are: orientation centroid_z area elongation bias
 
@@ -599,6 +621,8 @@ int main (int argc, char* argv[])
 
     size_t N_nodes = node_features.rows();
 
+    // Insert the nodes into the graph
+
     for ( size_t i = 0; i < N_nodes; i++ )
     {
         Eigen::VectorXd features = node_features.row(i);
@@ -614,13 +638,12 @@ int main (int argc, char* argv[])
     }
 
 
-    /*--------------------------------------------------------------------------
-     *
-     *                                  EDGES
-     *
-     *-------------------------------------------------------------------------*/
+    //
+    // Edges
+    //
 
-    Eigen::Matrix<float,28,2> edges;
+    Eigen::Matrix<float,28,2> edges; // A total of 28 objects between the 11 objects
+
     edges << 1, 2,
     1, 3,
     1, 4,
@@ -737,10 +760,15 @@ int main (int argc, char* argv[])
 
         CEdgePtr edgePtr ( new CEdge( n1, n2, edgeType1, scaledFeatures) );
 
-        //std::cout << "----" << std::endl << scaledFeatures << std::endl;
-
         myGraph.addEdge( edgePtr );
     }
+
+
+/*------------------------------------------------------------------------------
+ *
+ *                             MAP INFERENCE
+ *
+ *----------------------------------------------------------------------------*/
 
     CDecodeICM      decodeICM;
 

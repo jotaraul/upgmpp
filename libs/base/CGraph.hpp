@@ -52,11 +52,31 @@ namespace UPGMpp
         std::multimap<size_t,CEdgePtr>   m_edges_f; //!< Vectof of fast access to all the edges where a node appears.
         std::vector<CEdgePtr>            m_edges;   //!< Vector of graph edges.
         std::vector<CNodePtr>            m_nodes;   //!< Vector of graph nodes.
+        size_t                           m_id;      //!< Graph ID.
+
+        /** Private function for obtaning the ID of a new graph.
+         */
+        size_t setID() const { static size_t ID = 0; return ID++; }
 
     public:
 
         /** Default constructor */
-        CGraph() {}
+        CGraph() { m_id = setID(); }
+
+        /** Function for setting the ID of the graph.
+         * \param id: New graph ID.
+         */
+        inline void setID( size_t id ) { m_id = id; }
+
+        /** Function for getting the graph ID.
+         * \return A copy of the graph ID.
+         */
+        inline size_t getID(){ return m_id; }
+
+        /** Function for getting the graph ID.
+         * \return A copy of the graph ID.
+         */
+        inline size_t getID() const { return m_id; }
 
         /** Function for adding a node to the graph.
          * \param node: Smart pointer to the node to add.
@@ -103,6 +123,8 @@ namespace UPGMpp
             for ( it = m_nodes.begin(); it != m_nodes.end(); it++ )
                 if ( it->get()->getID() == ID )
                     return *it;
+
+            throw std::logic_error( "Unknown node!" );
         }
 
         /** Get the vector of edges.
@@ -146,8 +168,6 @@ namespace UPGMpp
             size_t n2_id = n2->getID();
 
             m_edges.push_back(edge);
-            size_t size = m_edges.size();
-            size_t f_size = m_edges_f.size();
 
             m_edges_f.insert( std::pair<size_t, CEdgePtr> (n1_id,edge) );
             m_edges_f.insert( std::pair<size_t, CEdgePtr> (n2_id,edge) );
@@ -250,6 +270,8 @@ namespace UPGMpp
          */
         friend std::ostream& operator<<(std::ostream& output, const CGraph& g)
         {
+            output << "GRAPH ID: " << g.getID() << std::endl;
+
             std::vector<CNodePtr> v_nodes;
             g.getNodes(v_nodes);
 
@@ -272,14 +294,105 @@ namespace UPGMpp
         /** Function for computing the potentials of the nodes and the edges in
          * the graph.
          */
-        void computePotentials();
+        void computePotentials()
+        {
+            // Method steps:
+            //  1. Compute node potentials
+            //  2. Compute edge potentials
+
+            //
+            //  1. Node potentials
+            //
+
+            std::vector<CNodePtr>::iterator it;
+
+            //cout << "NODE POTENTIALS" << endl;
+
+            for ( it = m_nodes.begin(); it != m_nodes.end(); it++ )
+            {
+                CNodePtr nodePtr = *it;
+
+                if ( !nodePtr->finalPotentials() )
+                {
+                    // Get the node type
+                    //size_t type = nodePtr->getType()->getID();
+
+                    // Compute the node potentials according to the node type and its
+                    // extracted features
+
+                    Eigen::VectorXd potentials = nodePtr->getType()->computePotentials( nodePtr->getFeatures() );
+
+                    // Apply the node class multipliers
+                    potentials = potentials.cwiseProduct( nodePtr->getClassMultipliers() );
+
+                    /*Eigen::VectorXd fixed = nodePtr->getFixed();
+
+                    potentials = potentials.cwiseProduct( fixed );*/
+
+                    nodePtr->setPotentials( potentials );
+                }
+
+            }
+
+            //
+            //  2. Edge potentials
+            //
+
+            std::vector<CEdgePtr>::iterator it2;
+
+            //cout << "EDGE POTENTIALS" << endl;
+
+            for ( it2 = m_edges.begin(); it2 != m_edges.end(); it2++ )
+            {
+                CEdgePtr edgePtr = *it2;
+
+                Eigen::MatrixXd potentials
+                        = edgePtr->getType()->computePotentials( edgePtr->getFeatures() );
+
+                edgePtr->setPotentials ( potentials );
+            }
+
+        }
 
         /** This method permits the user to get the unnormalized log likelihood
          * of the graph given a certain assignation to all its nodes.
          * \param classes: Classes assignation to all the nodes.
          * \return Unnormalized log likelihood.
          */
-        double getUnnormalizedLogLikelihood( std::map<size_t,size_t> &classes );
+        double getUnnormalizedLogLikelihood( std::map<size_t,size_t> &classes )
+        {
+            double unlikelihood = 1;
+
+            //size_t N_nodes = m_nodes.size();
+            size_t N_edges = m_edges.size();
+
+            std::map<size_t,size_t>::iterator it;
+
+            for ( it = classes.begin(); it != classes.end(); it++ )
+            {
+                CNodePtr node = getNodeWithID( it->first );
+                unlikelihood *= node->getPotentials()(classes[node->getID()]);
+            }
+
+            for ( size_t index = 0; index < N_edges; index++ )
+            {
+                CEdgePtr edge = m_edges[index];
+                CNodePtr n1, n2;
+                edge->getNodes(n1,n2);
+                size_t ID1 = n1->getID();
+                size_t ID2 = n2->getID();
+
+                if ( ID1 > ID2 )
+                    unlikelihood *= edge->getPotentials()(classes[ID2],classes[ID1]);
+                else
+                    unlikelihood *= edge->getPotentials()(classes[ID1],classes[ID2]);
+
+            }
+
+            unlikelihood = std::log( unlikelihood );
+
+            return unlikelihood;
+        }
 
         //
         //  Serialization stuff
@@ -290,6 +403,7 @@ namespace UPGMpp
         void save(Archive & ar, const unsigned int version) const
         {
             // note, version is always the latest when saving
+            ar & m_id;
             ar & m_nodes;
             ar & m_edges;
 
@@ -307,6 +421,7 @@ namespace UPGMpp
         template<class Archive>
         void load(Archive & ar, const unsigned int version)
         {
+            ar & m_id;
             ar & m_nodes;
             ar & m_edges;
 

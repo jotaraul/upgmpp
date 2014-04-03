@@ -59,10 +59,9 @@ void showResults(  std::map<size_t,size_t> &resultsMap );
 int main (int argc, char* argv[])
 {
 
-    cout << "------------------------------------------------------" << endl;
     cout << endl;
-    cout << "Example of how to perform decoding and inference tasks" << endl;
-    cout << endl;
+    cout << "      MAP AND MARGINAL INFERENCE EXAMPLE";
+    cout << endl << endl;
 
 /*------------------------------------------------------------------------------
  *

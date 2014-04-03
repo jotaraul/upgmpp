@@ -110,6 +110,12 @@ namespace UPGMpp
           */
         inline std::string& getLabel(){ return m_label; }
 
+
+        /**	Function for retrieving the label of the node type.
+          * \return Copy of the label of the node type.
+          */
+        inline std::string getLabel() const { return m_label; }
+
         /** Set the weights for this type of node.
           * \param weight: Matrix of the new type of node weights.
           */
@@ -131,12 +137,20 @@ namespace UPGMpp
         inline size_t getNumberOfClasses() { return m_weights.rows(); }
 
 
+        /** Get the number of features of nodes of this type.
+         * \return Number of features.
+         */
+        inline size_t getNumberOfFeatures() { return m_weights.cols(); }
+
+
         /**	Function for prompting the content of a node type
           * \return An stream with the node type information dumped into it.
           */
         friend std::ostream& operator<<(std::ostream& output, const CNodeType& n)
         {
             output << "ID: " << n.getID() << std::endl;
+            output << "Label: " << n.getLabel() << std::endl;
+            output << "Weights: " << std::endl << n.getWeights() << std::endl;
 
             return output;
         }

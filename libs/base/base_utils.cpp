@@ -20,55 +20,18 @@
  |                                                                           |
  *---------------------------------------------------------------------------*/
 
-#ifndef _UPGMpp_BASE_UTILS_
-#define _UPGMpp_BASE_UTILS_
+#include "base_utils.hpp"
 
-#include <boost/serialization/list.hpp>
-#include <boost/serialization/string.hpp>
-#include <boost/serialization/version.hpp>
-#include <boost/serialization/split_member.hpp>
-#include <boost/serialization/shared_ptr.hpp>
-#include <boost/serialization/vector.hpp>
-
-#include <Eigen/Dense>
-
-using namespace Eigen;
-
-namespace boost
+/*Eigen::VectorXd UPGMpp::floatVectorToEigenDoubleVector( T &array )
 {
-template<class Archive, typename _Scalar, int _Rows, int _Cols, int _Options, int _MaxRows, int _MaxCols>
-inline void serialize(
-    Archive & ar,
-    Matrix<_Scalar, _Rows, _Cols, _Options, _MaxRows, _MaxCols> & t,
-    const unsigned int file_version
-)
-{
-    size_t rows = t.rows(), cols = t.cols();
-    ar & rows;
-    ar & cols;
-    if( (unsigned int)(rows * cols) != t.size() )
-    t.resize( rows, cols );
+    Eigen::VectorXd eigenVector;
 
-    for(unsigned int i=0; i<t.size(); i++)
-    ar & t.data()[i];
-}
-}
+    size_t N_elements = array.size();
 
-namespace UPGMpp
-{
-    template<typename T> Eigen::VectorXd vectorToEigenVector( T &array )
-    {
-        Eigen::VectorXd eigenVector;
+    eigenVector.resize( N_elements );
 
-        size_t N_elements = array.size();
+    for ( size_t i = 0; i < N_elements; i++ )
+        eigenVector( i ) = array[i];
 
-        eigenVector.resize( N_elements );
-
-        for ( size_t i = 0; i < N_elements; i++ )
-            eigenVector( i ) = array[i];
-
-        return eigenVector;
-    }
-}
-
-#endif
+    return eigenVector;
+}*/

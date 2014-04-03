@@ -56,10 +56,10 @@ using namespace std;
 int main (int argc, char* argv[])
 {
 
-    cout << "---------------------------------------------------" << endl;
     cout << endl;
-    cout << "Example of how to use different node and edge types" << endl;
-    cout << endl;
+    cout << "       " << "DIFFERENT NODE TYPES EXAMPLE";
+    cout << endl << endl;
+
 
 
 /*------------------------------------------------------------------------------

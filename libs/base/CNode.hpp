@@ -65,9 +65,9 @@ namespace UPGMpp
           */
         CNode( CNodeTypePtr type,
             Eigen::VectorXd &features,
-            std::string label="" ) : m_handCodedPotentials( false ),
-                                     m_type ( type ),
-                                     m_label ( label )
+            std::string label="" ) : m_type ( type ),
+                                     m_label ( label ),
+                                     m_handCodedPotentials( false )
         {
             m_id = setID();
 
@@ -85,6 +85,35 @@ namespace UPGMpp
             m_classMultipliers.resize( N_classes );
             m_classMultipliers.fill(1);
 
+        }
+
+        /** Additional constructor.
+          */
+        template<typename T> CNode(  CNodeTypePtr type,
+                                     T &features,
+                                     std::string label="" ): m_type ( type ),
+                                                             m_label ( label ),
+                                                             m_handCodedPotentials( false )
+        {
+            // Translate the vector of features into an eigen vector
+
+            Eigen::VectorXd eigen_features = vectorToEigenVector( features );
+
+            m_id = setID();
+
+            // Check that features are a column vector, and transpose it  otherwise
+            ( eigen_features.cols() > 1 ) ?
+                        m_features = eigen_features
+                      : m_features = eigen_features.transpose();
+
+            //
+            size_t N_classes = type->getNumberOfClasses();
+
+            m_fixed.resize( N_classes );
+            m_fixed.fill(1);
+
+            m_classMultipliers.resize( N_classes );
+            m_classMultipliers.fill(1);
         }
 
 
@@ -209,6 +238,12 @@ namespace UPGMpp
         inline void setClassMultipliers( Eigen::VectorXd & newMultipliers)
         {
             m_classMultipliers = newMultipliers;
+        }
+
+        template <typename T> void setClassMultipliers( T &multipliers )
+        {
+            Eigen::VectorXd eigen_multipliers = vectorToEigenVector( multipliers );
+            setClassMultipliers( eigen_multipliers );
         }
 
         /** This method returns a reference to the vector of class multipliers.

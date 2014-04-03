@@ -113,6 +113,53 @@ namespace UPGMpp
 
         /** Additional constructor.
          */
+        template <typename T> CEdge( CNodePtr n1,
+               CNodePtr n2,
+               CEdgeTypePtr type,
+               T &features ) : m_type(type)
+        {
+
+            Eigen::VectorXd eigen_features = vectorToEigenVector( features );
+            m_id = setID();
+
+            // Check that features are a column vector, and transpose it otherwise
+            ( eigen_features.cols() > 1 ) ?
+                        m_features = eigen_features
+                      : m_features = eigen_features.transpose();
+
+            // The first node is always the one with the lower type of ID node.
+            // If they share the same type of node, then the first node is
+            // always the one with the lower node ID.
+            if ( n1->getType()->getID() != n2->getType()->getID() )
+            {
+                if ( n1->getType()->getID() == type->getN1Type()->getID() )
+                {
+                    m_n1 = n1;
+                    m_n2 = n2;
+                }
+                else
+                {
+                    m_n1 = n2;
+                    m_n2 = n1;
+                }
+            }
+            else
+            {
+                if ( n1->getID() > n2->getID() )
+                {
+                    m_n1 = n2;
+                    m_n2 = n1;
+                }
+                else
+                {
+                    m_n1 = n1;
+                    m_n2 = n2;
+                }
+            }
+        }
+
+        /** Additional constructor.
+         */
         CEdge( CNodePtr &n1,
                CNodePtr    &n2,
                CEdgeTypePtr   type,
@@ -163,6 +210,16 @@ namespace UPGMpp
           * \return The ID of the edge.
           */
         inline size_t getID(){ return m_id; }
+
+        /**	Function for retrieving the ID of the edge.
+          * \return The ID of the edge.
+          */
+        inline size_t getID() const { return m_id; }
+
+        /** Function for setting the edge ID.
+         * \param ID: new edge ID.
+         */
+        inline void setID( size_t ID ){ m_id = ID; }
 
         /** Function for getting the edge type.
          * \return A copy of the edge
@@ -285,6 +342,7 @@ namespace UPGMpp
           */
         friend std::ostream& operator<<(std::ostream& output, const CEdge& e)
         {
+            output << "Edge ID:" << e.getID() << std::endl;
             CNodePtr n1, n2;
             e.getNodes( n1, n2);
 

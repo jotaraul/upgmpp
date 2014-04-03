@@ -11,7 +11,7 @@
 #  NOTE: CMake can be obtained at http://www.cmake.org/
 # ----------------------------------------------------------------------------
 
-PROJECT(UPGM++)
+PROJECT(UPGMplusplus)
 
 if(COMMAND cmake_policy)
 	cmake_policy(SET CMP0005 OLD)
@@ -24,8 +24,6 @@ if(COMMAND cmake_policy)
 endif(COMMAND cmake_policy)
  
 list(APPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/cmake)
-
-set(LIB_PREFIX "libUPGMpp-")
 
 # EIGEN
 find_package(Eigen3 REQUIRED)
@@ -63,10 +61,18 @@ find_path(libLBGS_LIBRARY_DIR "./" CACHE FILEPATH "Directory of the libBFGS libr
 # Create UPGM++ libraries and add include directories to the examples
 SET( UPGM++_LIBRARIES "base;training;inference" )
 
+SET(INC_DIR "")
+SET(LIBRARIES "")
+
 FOREACH( LIBRARY ${UPGM++_LIBRARIES} )
 	ADD_SUBDIRECTORY(libs/${LIBRARY})
 	INCLUDE_DIRECTORIES(${CMAKE_SOURCE_DIR}/libs/${LIBRARY})
+	SET(INC_DIR ${INC_DIR}${CMAKE_SOURCE_DIR}/libs/${LIBRARY}\;)
+	SET(LIBRARIES ${LIBRARIES}${PROJECT_BINARY_DIR}/libs/UPGMplusplus-${LIBRARY}.a\;)
+	set_target_properties(${LIBRARY} PROPERTIES PREFIX "UPGMplusplus-")
 ENDFOREACH( LIBRARY ${UPGM++_LIBRARIES} )
+
+SET(INC_DIR ${INC_DIR}${EIGEN3_INCLUDE_DIR})
 
 
 # Enable GCC profiling (GCC only)
@@ -92,4 +98,7 @@ FOREACH( EXAMPLE ${UPGM++_EXAMPLES} )
 	# Link the executable
         TARGET_LINK_LIBRARIES(${EXAMPLE} base training inference ${Boost_LIBRARIES})
 ENDFOREACH( EXAMPLE ${UPGM++_EXAMPLES} )
+
+configure_file(${PROJECT_NAME}Config.cmake.in
+  "${PROJECT_BINARY_DIR}/${PROJECT_NAME}Config.cmake" @ONLY)
 

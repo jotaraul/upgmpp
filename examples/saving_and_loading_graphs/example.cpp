@@ -36,9 +36,24 @@
 using namespace UPGMpp;
 using namespace std;
 
+/*---------------------------------------------------------------------------*
+ *
+ * This example illustrates how to save/load graphs to/from files.
+ *
+ * It does the following stuff:
+ * 1. Prepare some training data.
+ * 2. Training of the graph parameters given that data.
+ * 3. Save the trained graph to a file, and show it.
+ * 4. Load the graph from the same file, and show it, so you can check that
+ *    both are the same.
+ *---------------------------------------------------------------------------*/
 
 int main (int argc, char* argv[])
 {
+
+    cout << endl;
+    cout << "       " << "SAVING AND LOADING GRAPHS EXAMPLE";
+    cout << endl << endl;
 
 /*------------------------------------------------------------------------------
  *
@@ -167,8 +182,6 @@ int main (int argc, char* argv[])
     groundTruth2[ nodePtr12->getID() ] = 1;
     groundTruth2[ nodePtr22->getID() ] = 1;
 
-    //cout << "GRAPH2: " << endl << graph2 << endl;
-
     trainingDataset.addGraph( graph2 );
     trainingDataset.addGraphGroundTruth( groundTruth2 );
 
@@ -207,8 +220,6 @@ int main (int argc, char* argv[])
     groundTruth3[ nodePtr13->getID() ] = 0;
     groundTruth3[ nodePtr23->getID() ] = 1;
 
-    //cout << "GRAPH3: " << endl << graph3 << endl;
-
     trainingDataset.addGraph( graph3 );
     trainingDataset.addGraphGroundTruth( groundTruth3 );
 
@@ -219,11 +230,17 @@ int main (int argc, char* argv[])
  *
  *----------------------------------------------------------------------------*/
 
+
+    cout << "---------------------------------------------" << endl;
+    cout << "                 TRAINING " << endl;
+    cout << "---------------------------------------------" << endl << endl;
+
     UPGMpp::TTrainingOptions to;
     to.l2Regularization     = true;
     to.nodeLambda           = 10;
     to.edgeLambda           = 1;
-    to.showTrainedWeights   = true;
+    to.showTrainedWeights   = false;
+    to.showTrainingProgress = false;
 
     trainingDataset.setTrainingOptions( to );
     trainingDataset.train();
@@ -231,34 +248,60 @@ int main (int argc, char* argv[])
 
     graph.computePotentials();
 
-    // Save data to archive
+
+/*------------------------------------------------------------------------------
+ *
+ *                           SAVE GRAPH TO FILE
+ *
+ *----------------------------------------------------------------------------*/
+
     {
-        // create and open a character archive for output
+        // Create and open a character archive for output
+
         std::ofstream ofs("myGraphFile.txt", std::ofstream::out);
         boost::archive::text_oarchive oa(ofs);
-        // write class instance to archive
+
+        // Write graph to file
         oa << graph;
-        // archive and stream closed when destructors are called
+
+        // Archive and stream closed when destructors are called
         ofs.close();
     }
 
-    cout << "Original graphhhhh" << graph << endl;
+    cout << endl;
+    cout << "---------------------------------------------" << endl;
+    cout << "                SAVED GRAPH " << endl;
+    cout << "---------------------------------------------" << endl << endl;
 
-    // Load data from archive
+    cout << graph;
+
+/*------------------------------------------------------------------------------
+ *
+ *                          LOAD GRAPH FROM FILE
+ *
+ *----------------------------------------------------------------------------*/
+
     CGraph loadedGraph;
+
     {
-        // create and open an archive for input
+        // Create and open an archive for input
         std::ifstream ifs("myGraphFile.txt");
         boost::archive::text_iarchive ia(ifs);
-        // read class state from archive
+
+        // Read graph from file
         ia >> loadedGraph;
-        // archive and stream closed when destructors are called
+
+        // Archive and stream closed when destructors are called
         ifs.close();
     }
 
-    cout << "Loaded graphhhhhh" << loadedGraph << endl;
+    cout << "---------------------------------------------" << endl;
+    cout << "               LOADED GRAPH " << endl;
+    cout << "---------------------------------------------" << endl << endl;
 
-    // We are ready to take a beer :)
+    cout << loadedGraph << endl;
+
+    // We are ready to take a beer :)*/
 
     return 0;
 }
