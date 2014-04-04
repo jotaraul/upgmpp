@@ -62,6 +62,11 @@ namespace UPGMpp
         std::string     m_label;       //!< Human readable label. Not mandatory.
         Eigen::VectorXd (*m_computePotentialsFunction)( Eigen::MatrixXd &, Eigen::VectorXd &); //!< Pointer to the function that computes the node potentials
 
+        std::vector< std::string >  m_classNames; //!< A vector containing the name of the classes of the node type
+        std::vector< std::string >  m_featureNames;//!< Names of the features used to characterize this node type
+        size_t  m_nClasses;
+        size_t  m_nFeatures;
+
         /** Private function for obtaning the ID of a new node type.
          */
         size_t setID() const { static size_t ID = 0; return ID++; }
@@ -70,7 +75,7 @@ namespace UPGMpp
 
         /** Default constructor
           */
-        CNodeType()
+        CNodeType() : m_nClasses(0)
         {
             m_computePotentialsFunction = &linearModelNode;
 
@@ -85,8 +90,32 @@ namespace UPGMpp
 
             m_ID = setID();
 
+            m_nClasses  = N_classes;
+            m_nFeatures = N_features;
             m_weights.resize( N_classes, N_features );
-            m_label = label;
+            m_label     = label;
+
+            m_classNames.resize( N_classes, "" );
+            m_featureNames.resize( N_features, "" );
+        }
+
+        /** Adittional constructor
+         */
+        CNodeType( const std::vector< std::string> &classNames,
+                   const std::vector< std::string> &featureNames,
+                   const std::string label = "" )
+            : m_classNames( classNames ),
+              m_featureNames( featureNames )
+        {
+            m_computePotentialsFunction = &linearModelNode;
+
+            m_ID = setID();
+
+            m_nClasses  = m_classNames.size();
+            m_nFeatures = m_featureNames.size();
+            m_weights.resize( m_nClasses, m_nFeatures );
+            m_label     = label;
+
         }
 
         /**	Function for retrieving the ID of the node type.
@@ -110,16 +139,46 @@ namespace UPGMpp
           */
         inline std::string& getLabel(){ return m_label; }
 
-
         /**	Function for retrieving the label of the node type.
           * \return Copy of the label of the node type.
           */
         inline std::string getLabel() const { return m_label; }
 
+
         /** Set the weights for this type of node.
           * \param weight: Matrix of the new type of node weights.
           */
-        inline void setWeights( Eigen::MatrixXd &weights ) { m_weights = weights; }
+        void setWeights( Eigen::MatrixXd &weights )
+        {
+            if ( m_nClasses ) // Node type already initialized
+            {
+                assert( weights.rows() == m_nClasses );
+                assert( weights.cols() == m_nFeatures );
+
+                m_weights = weights;
+            }
+            else // The default constructor was called, so initialize some
+                // needed vbles here
+            {
+                m_nClasses = weights.rows();
+                m_nFeatures = weights.cols();
+
+                // Check if the class names have already been set
+                if ( m_classNames.size() )
+                    assert( m_nClasses = m_classNames.size() );
+                else
+                    m_classNames.resize( m_nClasses, "" );
+
+                // Check if the feature names have already been set
+                if ( m_featureNames.size() )
+                    assert( m_nFeatures = m_featureNames.size() );
+                else
+                    m_featureNames.resize( m_nFeatures, "" );
+
+                m_weights = weights;
+            }
+
+        }
 
         /**	Get the matrix of weights.
           * \return A copy of the matrix of weights.
@@ -131,16 +190,54 @@ namespace UPGMpp
           */
         inline Eigen::MatrixXd& getWeights(){ return m_weights; }
 
+
         /** Get the number of classes (states) of nodes of this type.
          * \return Number of classes.
          */
-        inline size_t getNumberOfClasses() { return m_weights.rows(); }
+        inline size_t getNumberOfClasses() { return m_nClasses; }
 
+
+        /** Set the names of the classes of the node type. This method fails if
+         * the number of node classes has been already set and the size of the
+         * newClassNames vector is different.
+         * \param newClassNames: vector of new classe names.
+         */
+        inline void setClassNames( const std::vector< std::string > &newClassNames )
+        {
+            if ( m_nClasses )
+                assert ( m_nClasses == newClassNames.size() );
+
+            m_classNames = newClassNames;
+        }
+
+        /** Get the name of the class used in this node type.
+         *  \return A copy of the vector of class names.
+         */
+        inline std::vector< std::string > getClassNames(){ return m_classNames; }
+
+
+        /** Set the names of the features of the node type. This method fails if
+         * the number of node features has been already set and the size of the
+         * newFeaturenames vector is different.
+         * \param newFeaturenames: vector of new feature names.
+         */
+        void setFeatureNames( const std::vector< std::string > &newFeatureNames )
+        {
+            if ( m_nFeatures )
+                assert ( m_nFeatures == newFeatureNames.size() );
+
+            m_featureNames = newFeatureNames;
+        }
+
+        /** Get the name of the features used in this node type.
+         *  \return A copy of the vector of feature names.
+         */
+        inline std::vector< std::string > getFeatureNames(){ return m_featureNames; }
 
         /** Get the number of features of nodes of this type.
          * \return Number of features.
          */
-        inline size_t getNumberOfFeatures() { return m_weights.cols(); }
+        inline size_t getNumberOfFeatures() { return m_nFeatures; }
 
 
         /**	Function for prompting the content of a node type
@@ -162,6 +259,12 @@ namespace UPGMpp
          */
         Eigen::VectorXd computePotentials( Eigen::VectorXd &features )
         {
+            // Check that features are a column vector, and transpose it  otherwise
+            if ( features.cols() > 1 )
+                        features = features.transpose();
+
+            assert ( features.rows() == m_nFeatures );
+
             return (*m_computePotentialsFunction)(m_weights,features);
         }
 
@@ -185,6 +288,12 @@ namespace UPGMpp
             ar & m_weights;
             ar & m_ID;
             ar & m_label;
+
+            ar & m_classNames;
+            ar & m_featureNames;
+            ar & m_nClasses;
+            ar & m_nFeatures;
+
         }
         template<class Archive>
         void load(Archive & ar, const unsigned int version)
@@ -192,6 +301,11 @@ namespace UPGMpp
             ar & m_weights;
             ar & m_ID;
             ar & m_label;
+
+            ar & m_classNames;
+            ar & m_featureNames;
+            ar & m_nClasses;
+            ar & m_nFeatures;
         }
         BOOST_SERIALIZATION_SPLIT_MEMBER()
 

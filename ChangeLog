@@ -1,12 +1,19 @@
 TODOs:
 
-- (1) Make the library robust to removed nodes or edges.
 - (4) Implement decoding method ICM with restarts.
 - (3) Implement exact (brute force) inference method.
 - (2) Study and implement how to hallucinate objects and obtain their most probable location.
 - (1) Add unit test cases.
 
+
+Alpha 0.0.5 (03-04-2014)
+- [BASE] CNode, CEdge, CNodeType, CEdgeType: added asserts for checking the size of vectors that are to be used to set a member vector, e.g., m_features = features -> assert ( features.size() == n_features ).
+- [BASE] Added the posibility of specifying the feature names in an edge type.
+- [BASE] Added the posibility of specifying the class names and feature names in a node type.
+
 Alpha 0.0.4 (10-03-2014)
+- [BASE] New CNode and CEdge constructors so now any vector-like data type can be use to give the node or edege features.
+- [EXAMPLES] Improved the examples documentation. Now they are nicely explained.
 - [BASE] Now nodes have also a vector of class multipliers, which can be used to add some prior information to the PGM.
 - [INFERENCE] Finally implemented LBP for inference (marginal probabilities computation).
 - [BASE] Now the value of a node can be set to a given class, and it will be taken into account in the inference methods.

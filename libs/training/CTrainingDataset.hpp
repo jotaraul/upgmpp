@@ -64,15 +64,15 @@ namespace UPGMpp
     class CTrainingDataSet
     {
     private:
-        std::vector<CGraph>          m_graphs;
+        std::vector<CGraph>                     m_graphs;
         std::vector<std::map<size_t,size_t> >   m_groundTruth;
-        std::vector<CNodeTypePtr>    m_nodeTypes;
-        std::vector<CEdgeTypePtr>    m_edgeTypes;
+        std::vector<CNodeTypePtr>               m_nodeTypes;
+        std::vector<CEdgeTypePtr>               m_edgeTypes;
         std::map<CEdgeTypePtr,Eigen::VectorXi>  m_typesOfEdgeFeatures;
-        size_t                       N_weights;
-        std::map<CNodeTypePtr, Eigen::MatrixXi>              m_nodeWeightsMap;
+        size_t                                  N_weights;
+        std::map<CNodeTypePtr, Eigen::MatrixXi> m_nodeWeightsMap;
         std::map<CEdgeTypePtr,std::vector<Eigen::MatrixXi> > m_edgeWeightsMap;
-        TTrainingOptions             m_trainingOptions;
+        TTrainingOptions                        m_trainingOptions;
 
     public:
 
@@ -118,6 +118,14 @@ namespace UPGMpp
             m_edgeTypes.push_back( edgeType );
             m_typesOfEdgeFeatures[ edgeType ] = typeOfEdgeFeatures;
         }
+
+        void addEdgeType( CEdgeTypePtr edgeType, std::vector<int> typeOfEdgeFeatures  )
+        {
+            // Add the edge type to the vector of edge types
+            m_edgeTypes.push_back( edgeType );
+            m_typesOfEdgeFeatures[ edgeType ] = vectorToIntEigenVector( typeOfEdgeFeatures );
+        }
+
 
         void train();
 

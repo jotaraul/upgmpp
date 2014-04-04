@@ -66,6 +66,9 @@ namespace UPGMpp
         CNodeTypePtr m_nodeType1; //!< Node type of the first node.
         CNodeTypePtr m_nodeType2; //!< Node type of the second node.
 
+        size_t                    m_nFeatures;    //!< Number of edge features.
+        std::vector< std::string> m_featureNames; //!< Name of the edge features. Not mandatory.
+
         /** Private function for obtaning the ID of a new edge type.
          */
         size_t setID(){ static size_t ID = 0; return ID++; }
@@ -74,7 +77,7 @@ namespace UPGMpp
 
         /** Default constructor
          */
-        CEdgeType()
+        CEdgeType(): m_nFeatures(0)
         {
             m_computePotentialsFunction = &linearModelEdge;
 
@@ -92,6 +95,8 @@ namespace UPGMpp
 
             // Get unique ID            
             m_ID = setID();
+
+            m_nFeatures = N_features;
 
             size_t N_classes_1;
             size_t N_classes_2;
@@ -122,6 +127,50 @@ namespace UPGMpp
                 m_weights[i].resize( N_classes_1, N_classes_2 );
         }
 
+        /** Additional constructor
+         */
+        CEdgeType( const std::vector< std::string > &featureNames,
+                   CNodeTypePtr nodeType1,
+                   CNodeTypePtr nodeType2,
+                   const std::string label="")
+            : m_featureNames( featureNames )
+
+        {
+            m_computePotentialsFunction = &linearModelEdge;
+
+            // Get unique ID
+            m_ID = setID();
+
+            m_nFeatures = featureNames.size();
+
+            size_t N_classes_1;
+            size_t N_classes_2;
+
+            // Ensure that the node type with the lower ID is always the first
+            // node type in the edge type.
+            if ( nodeType1->getID() <= nodeType2->getID() )
+            {
+                m_nodeType1 = nodeType1;
+                m_nodeType2 = nodeType2;
+
+                N_classes_1 = nodeType1->getNumberOfClasses();
+                N_classes_2 = nodeType2->getNumberOfClasses();
+            }
+            else
+            {
+                m_nodeType1 = nodeType2;
+                m_nodeType2 = nodeType1;
+
+                N_classes_1 = nodeType2->getNumberOfClasses();
+                N_classes_2 = nodeType1->getNumberOfClasses();
+            }
+
+            // Create the vector of matrices of weights, one per edge feature
+            m_weights.resize( m_nFeatures );
+
+            for ( size_t i = 0; i < m_nFeatures; i++ )
+                m_weights[i].resize( N_classes_1, N_classes_2 );
+        }
         /**	Function for retrieving the ID of the edge type.
           * \return A copy of the ID of the edge type.
           */
@@ -146,10 +195,32 @@ namespace UPGMpp
          *  \param weights: new vector of matrices of weights, where each vector
          *                  position refers to an edge feature.
          */
-        inline void setWeights( std::vector<Eigen::MatrixXd> &weights ) { m_weights = weights; }
+        void setWeights( std::vector<Eigen::MatrixXd> &weights )
+        {
+            // Check if the default constructor was used, if so the matrix of
+            // weights could be empty
+            if ( m_nFeatures )
+            {
+                assert( weights.size() == m_nFeatures );
+
+                for ( size_t i = 0; i < m_nFeatures; i++ )
+                {
+                    assert( m_weights[i].cols() == weights[i].cols() );
+                    assert( m_weights[i].rows() == weights[i].rows() );
+                }
+            }
+            else
+                m_nFeatures = weights.size();
+
+            m_weights = weights;
+        }
 
         inline void setWeight( size_t feature, size_t row, size_t col, double &weight)
         {
+            assert ( feature < m_nFeatures );
+            assert ( row < m_weights[feature].rows() );
+            assert ( col < m_weights[feature].cols() );
+
             m_weights[feature](row,col) = weight;
         }
 
@@ -158,12 +229,32 @@ namespace UPGMpp
          */
         inline std::vector<Eigen::MatrixXd>& getWeights() { return m_weights; }
 
+
+        /** Set the name of the edge features.
+         * \param newNames: names for the edge features.
+         */
+        void setFeatureNames( const std::vector< std::string > &newNames )
+        {
+            if ( m_nFeatures )
+                assert ( m_nFeatures == newNames.size() );
+
+            m_featureNames = newNames;
+        }
+
+        /** Get the name of the edge features.
+         * \return A copy of the vector of edge features.
+         */
+        inline std::vector<std::string> getFeatureNames(){ return m_featureNames; }
+
+
         /** Function that computes the potentials of an edge given their features.
          * \param features: features of the edge.
          * \return The edge potentials.
          **/
         Eigen::MatrixXd computePotentials( Eigen::VectorXd &features )
         {
+            assert ( features.rows() == m_nFeatures );
+
             return (*m_computePotentialsFunction)( m_weights, features );
         }
 
@@ -201,6 +292,9 @@ namespace UPGMpp
             ar & m_label;
             ar & m_nodeType1;
             ar & m_nodeType2;
+
+            ar & m_nFeatures;
+            ar & m_featureNames;
         }
         template<class Archive>
         void load(Archive & ar, const unsigned int version)
@@ -210,6 +304,9 @@ namespace UPGMpp
             ar & m_label;
             ar & m_nodeType1;
             ar & m_nodeType2;
+
+            ar & m_nFeatures;
+            ar & m_featureNames;
         }
         BOOST_SERIALIZATION_SPLIT_MEMBER()
 

@@ -67,16 +67,11 @@ namespace UPGMpp
             Eigen::VectorXd &features,
             std::string label="" ) : m_type ( type ),
                                      m_label ( label ),
+                                     m_features( features ),
                                      m_handCodedPotentials( false )
         {
             m_id = setID();
 
-            // Check that features are a column vector, and transpose it  otherwise
-            ( features.cols() > 1 ) ?
-                        m_features = features
-                      : m_features = features.transpose();
-
-            //
             size_t N_classes = type->getNumberOfClasses();
 
             m_fixed.resize( N_classes );
@@ -95,16 +90,11 @@ namespace UPGMpp
                                                              m_label ( label ),
                                                              m_handCodedPotentials( false )
         {
-            // Translate the vector of features into an eigen vector
-
-            Eigen::VectorXd eigen_features = vectorToEigenVector( features );
-
             m_id = setID();
 
-            // Check that features are a column vector, and transpose it  otherwise
-            ( eigen_features.cols() > 1 ) ?
-                        m_features = eigen_features
-                      : m_features = eigen_features.transpose();
+            // Convert the vector of features into an eigen vector
+
+            m_features = vectorToEigenVector( features );
 
             //
             size_t N_classes = type->getNumberOfClasses();
@@ -174,11 +164,20 @@ namespace UPGMpp
           * \param feat: the new features of the node.
           */
         void setFeatures( Eigen::VectorXd &features)
+        {            
+            assert( features.rows() == m_type->getNumberOfFeatures() );
+
+            m_features = features;
+        }
+
+        /**	Function for setting the node's features
+          * \param feat: the new features of the node.
+          */
+        template<typename T> void setFeatures( T &features)
         {
-            // Check that features are a column vector, and transpose it  otherwise
-            ( features.cols() > 1 ) ?
-                        m_features = features
-                      : m_features = features.transpose();
+            assert( features.size() == m_type->getNumberOfFeatures() );
+
+            m_features = vectorToEigenVector( features );
         }
 
         /** This method fix the node to a certain class.
@@ -186,7 +185,7 @@ namespace UPGMpp
          */
         void fix( size_t toClass )
         {
-            assert( toClass < m_potentials.rows() );
+            assert( toClass < m_type->getNumberOfClasses() );
 
             m_fixed.fill(0);
             m_fixed( toClass ) = 1;
@@ -213,15 +212,20 @@ namespace UPGMpp
           * \param pot: new node potentials.
           */
         inline void setPotentials( const Eigen::VectorXd &pot )
-        { m_potentials = pot; }
+        {
+            assert( pot.rows() == m_type->getNumberOfClasses() );
+            m_potentials = pot;
+        }
 
         /** This method allows the user to set the node's potentials to a final
          * value, enabling in this way the definition of Markov Random Fields
          * instead of Conditional Random Fields.
          * \param pot: potentials for the node.
          */
-        inline void setFinalPotentials ( const Eigen::VectorXd &pot )
+        void setFinalPotentials ( const Eigen::VectorXd &pot )
         {
+            assert( pot.rows() == m_type->getNumberOfClasses() );
+
             m_potentials            = pot;
             m_handCodedPotentials   = true;
         }
@@ -237,6 +241,7 @@ namespace UPGMpp
          */
         inline void setClassMultipliers( Eigen::VectorXd & newMultipliers)
         {
+            assert( newMultipliers.size() == m_type->getNumberOfClasses() );
             m_classMultipliers = newMultipliers;
         }
 

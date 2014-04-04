@@ -124,7 +124,8 @@ namespace UPGMpp
                 if ( it->get()->getID() == ID )
                     return *it;
 
-            throw std::logic_error( "Unknown node!" );
+            CNodePtr emptyNodePtr;
+            return emptyNodePtr;
         }
 
         /** Get the vector of edges.
@@ -154,6 +155,20 @@ namespace UPGMpp
                     return i;
 
             return -1;
+        }
+
+        /** Get the edge with a given ID.
+         * \param edgeID: ID of the edge.
+         * \return Smart pointer to the edge.
+         */
+        CEdgePtr getEdgeWithID( const size_t edgeID )
+        {
+            for ( size_t i = 0; i < m_edges.size(); i++ )
+                if ( edgeID == m_edges[i]->getID() )
+                    return m_edges[i];
+
+            CEdgePtr emptyEdgePtr;
+            return emptyEdgePtr;
         }
 
         /** Add an edge to the graph.

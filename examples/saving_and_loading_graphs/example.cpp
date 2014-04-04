@@ -259,10 +259,13 @@ int main (int argc, char* argv[])
         // Create and open a character archive for output
 
         std::ofstream ofs("myGraphFile.txt", std::ofstream::out);
+        //std::ofstream ofs("myNodeAndEdgeTypesFile.txt", std::ofstream::out);
         boost::archive::text_oarchive oa(ofs);
 
         // Write graph to file
         oa << graph;
+        //oa << *simpleNodeType1Ptr;
+        //oa << *simpleEdgeType1Ptr;
 
         // Archive and stream closed when destructors are called
         ofs.close();

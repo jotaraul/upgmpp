@@ -45,17 +45,52 @@ namespace UPGMpp
     {
     private:
 
-        CNodePtr m_n1;      //!< First node in the edge. It will be always the one with the lower ID.
-        CNodePtr m_n2;      //!< Second edge's node.
+        CNodePtr        m_n1;      //!< First node in the edge. It will be always the one with the lower ID.
+        CNodePtr        m_n2;      //!< Second edge's node.
         Eigen::VectorXd	m_features;     //!< Vector of extracted features for this edge.
         Eigen::MatrixXd	m_potentials;   //!< Computed potentials. Initially empty.
-        CEdgeTypePtr       m_type;  //!< Pointer to the edge type.
+        CEdgeTypePtr    m_type;  //!< Pointer to the edge type.
         size_t          m_id;       //!< ID of the edge. It is unique and automatically assigned.
         bool            m_handCodedPotentials;
 
         /** Private function for obtaning the ID of a new edge.
          */
         size_t setID() { static size_t ID = 0; return ID++; }
+
+        /** Private funtion for properly setting the first and second edge nodes.
+         */
+        void setNodeTypes( CNodePtr n1, CNodePtr n2, CEdgeTypePtr type )
+        {
+            // The first node is always the one with the lower type of ID node.
+            // If they share the same type of node, then the first node is
+            // always the one with the lower node ID.
+            if ( n1->getType()->getID() != n2->getType()->getID() )
+            {
+                if ( n1->getType()->getID() == type->getN1Type()->getID() )
+                {
+                    m_n1 = n1;
+                    m_n2 = n2;
+                }
+                else
+                {
+                    m_n1 = n2;
+                    m_n2 = n1;
+                }
+            }
+            else
+            {
+                if ( n1->getID() > n2->getID() )
+                {
+                    m_n1 = n2;
+                    m_n2 = n1;
+                }
+                else
+                {
+                    m_n1 = n1;
+                    m_n2 = n2;
+                }
+            }
+        }
 
     public:
 
@@ -71,44 +106,13 @@ namespace UPGMpp
         CEdge( CNodePtr n1,
                CNodePtr n2,
                CEdgeTypePtr type,
-               Eigen::VectorXd &features ) : m_type(type)
+               Eigen::VectorXd &features ) : m_features( features ),
+                                             m_type(type)
+
         {            
             m_id = setID();
 
-            // Check that features are a column vector, and transpose it otherwise
-            ( features.cols() > 1 ) ?
-                        m_features = features
-                      : m_features = features.transpose();
-
-            // The first node is always the one with the lower type of ID node.
-            // If they share the same type of node, then the first node is
-            // always the one with the lower node ID.
-            if ( n1->getType()->getID() != n2->getType()->getID() )
-            {
-                if ( n1->getType()->getID() == type->getN1Type()->getID() )
-                {                    
-                    m_n1 = n1;
-                    m_n2 = n2;
-                }
-                else
-                {                    
-                    m_n1 = n2;
-                    m_n2 = n1;
-                }
-            }
-            else
-            {
-                if ( n1->getID() > n2->getID() )
-                {                    
-                    m_n1 = n2;
-                    m_n2 = n1;
-                }
-                else
-                {                    
-                    m_n1 = n1;
-                    m_n2 = n2;
-                }
-            }
+            setNodeTypes( n1, n2, type );
         }
 
         /** Additional constructor.
@@ -119,43 +123,12 @@ namespace UPGMpp
                T &features ) : m_type(type)
         {
 
-            Eigen::VectorXd eigen_features = vectorToEigenVector( features );
+            m_features =  vectorToEigenVector( features );
+
             m_id = setID();
 
-            // Check that features are a column vector, and transpose it otherwise
-            ( eigen_features.cols() > 1 ) ?
-                        m_features = eigen_features
-                      : m_features = eigen_features.transpose();
+            setNodeTypes( n1, n2, type );
 
-            // The first node is always the one with the lower type of ID node.
-            // If they share the same type of node, then the first node is
-            // always the one with the lower node ID.
-            if ( n1->getType()->getID() != n2->getType()->getID() )
-            {
-                if ( n1->getType()->getID() == type->getN1Type()->getID() )
-                {
-                    m_n1 = n1;
-                    m_n2 = n2;
-                }
-                else
-                {
-                    m_n1 = n2;
-                    m_n2 = n1;
-                }
-            }
-            else
-            {
-                if ( n1->getID() > n2->getID() )
-                {
-                    m_n1 = n2;
-                    m_n2 = n1;
-                }
-                else
-                {
-                    m_n1 = n1;
-                    m_n2 = n2;
-                }
-            }
         }
 
         /** Additional constructor.
@@ -164,45 +137,14 @@ namespace UPGMpp
                CNodePtr    &n2,
                CEdgeTypePtr   type,
                Eigen::VectorXd &features,
-               Eigen::MatrixXd &potentials) : m_potentials(potentials), m_type(type)
-        {
+               Eigen::MatrixXd &potentials) : m_features( features ),
+                                              m_potentials(potentials),
+                                              m_type(type)
 
+        {
             m_id = setID();
 
-            // Check that features are a column vector, and transpose it  otherwise
-            ( features.cols() > 1 ) ?
-                        m_features = features
-                      : m_features = features.transpose();
-
-            // The first node is always the one with the lower type of ID node.
-            // If they share the same type of node, then the first node is
-            // always the one with the lower node ID.
-            if ( n1->getType()->getID() != n2->getType()->getID() )
-            {
-                if ( n1->getType()->getID() == type->getN1Type()->getID() )
-                {
-                    m_n1 = n1;
-                    m_n2 = n2;
-                }
-                else
-                {
-                    m_n1 = n2;
-                    m_n2 = n1;
-                }
-            }
-            else
-            {
-                if ( n1->getID() > n2->getID() )
-                {
-                    m_n1 = n2;
-                    m_n2 = n1;
-                }
-                else
-                {
-                    m_n1 = n1;
-                    m_n2 = n2;
-                }
-            }
+            setNodeTypes( n1, n2, type );
         }
 
 
@@ -278,11 +220,15 @@ namespace UPGMpp
          */
         inline void setFeatures( const Eigen::VectorXd &features)
         {
-            // Check that features are a column vector, and transpose it  otherwise
-            ( features.cols() > 1 ) ?
-                        m_features = features
-                      : m_features = features.transpose();
+            m_features = features;
+        }
 
+        /** Set the edge features.
+         * \param features: Vector of features.
+         */
+        template<typename T> inline void setFeatures( const T &features)
+        {
+            m_features = vectorToEigenVector( features );
         }
 
         /** Get a copy of the edge potentials.
@@ -325,7 +271,6 @@ namespace UPGMpp
          */
         Eigen::VectorXd getNeighborPotentialsForNodeFixedValue( size_t nodeID, size_t neighborClass )
         {
-
             if ( nodeID == m_n1->getID() )
             {
                 return m_potentials.col( neighborClass );
@@ -334,7 +279,6 @@ namespace UPGMpp
             {
                 return m_potentials.row( neighborClass ).transpose();
             }
-
         }
 
         /**	Function for prompting the content of an edge.

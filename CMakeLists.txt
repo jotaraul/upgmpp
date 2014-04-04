@@ -39,9 +39,9 @@ find_package(Boost 1.55.0 COMPONENTS filesystem serialization REQUIRED)
 include_directories(${Boost_INCLUDE_DIRS}) 
 
 # libBFGS
-set(libLBFGS_INCLUDE_DIR "./" CACHE FILEPATH "Directory of the libBFGS includes directory")
-include_directories(${libLBFGS_INCLUDE_DIR})
-find_path(libLBGS_LIBRARY_DIR "./" CACHE FILEPATH "Directory of the libBFGS library directory")
+#set(libLBFGS_INCLUDE_DIR "./" CACHE FILEPATH "Directory of the libBFGS includes directory")
+#include_directories(${libLBFGS_INCLUDE_DIR})
+#find_path(libLBGS_LIBRARY_DIR "./" CACHE FILEPATH "Directory of the libBFGS library directory")
 
 
 # ---------------------------------------------
@@ -68,11 +68,12 @@ FOREACH( LIBRARY ${UPGM++_LIBRARIES} )
 	ADD_SUBDIRECTORY(libs/${LIBRARY})
 	INCLUDE_DIRECTORIES(${CMAKE_SOURCE_DIR}/libs/${LIBRARY})
 	SET(INC_DIR ${INC_DIR}${CMAKE_SOURCE_DIR}/libs/${LIBRARY}\;)
-	SET(LIBRARIES ${LIBRARIES}${PROJECT_BINARY_DIR}/libs/UPGMplusplus-${LIBRARY}.a\;)
-	set_target_properties(${LIBRARY} PROPERTIES PREFIX "UPGMplusplus-")
+	SET(LIBRARIES ${LIBRARIES}${PROJECT_BINARY_DIR}/libs/libUPGMplusplus-${LIBRARY}.so\;)
+	set_target_properties(${LIBRARY} PROPERTIES PREFIX "libUPGMplusplus-")
 ENDFOREACH( LIBRARY ${UPGM++_LIBRARIES} )
 
-SET(INC_DIR ${INC_DIR}${EIGEN3_INCLUDE_DIR})
+SET(INC_DIR ${INC_DIR}${EIGEN3_INCLUDE_DIR}\;)
+SET(INC_DIR ${INC_DIR}${libLBFGS_INCLUDE_DIR})
 
 
 # Enable GCC profiling (GCC only)

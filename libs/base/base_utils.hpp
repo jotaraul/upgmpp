@@ -33,6 +33,7 @@
 #include <Eigen/Dense>
 
 using namespace Eigen;
+using namespace std;
 
 namespace boost
 {
@@ -68,6 +69,50 @@ namespace UPGMpp
             eigenVector( i ) = array[i];
 
         return eigenVector;
+    }
+
+    template<typename T> Eigen::VectorXi vectorToIntEigenVector( T &array )
+    {
+        Eigen::VectorXi eigenVector;
+
+        size_t N_elements = array.size();
+
+        eigenVector.resize( N_elements );
+
+        for ( size_t i = 0; i < N_elements; i++ )
+            eigenVector( i ) = array[i];
+
+        return eigenVector;
+    }
+
+    template<typename T> bool compareTwoVectors( const T &vector1, const T &vector2 )
+    {
+        size_t N_v1 = vector1.size();
+        size_t N_v2 = vector2.size();
+
+        if ( N_v1 != N_v2 )
+            return false;
+
+        for ( size_t i = 0; i < N_v1; i++ )
+        {
+            std::string value = vector1[i];
+
+            size_t occurencesIn1  = 0;
+            size_t occurencesIn2 = 0;
+
+            for ( size_t j = 0; j < N_v1; j++ )
+            {
+                if ( vector1[j] == value )
+                    occurencesIn1++;
+                if ( vector2[j] == value )
+                    occurencesIn2++;
+            }
+
+            if ( occurencesIn1 != occurencesIn2 )
+                return false;
+        }
+
+        return true;
     }
 }
 
