@@ -211,17 +211,18 @@ namespace UPGMpp
 
             // Remove edges than contain that node from m_edges and m_edges_f
 
-            std::vector<CEdgePtr>::iterator it2;
-
-            for ( it2 = m_edges.end(); it2 != m_edges.begin(); it2-- )
+            for ( size_t i = 0; i < m_edges.size(); )
             {
-                CEdgePtr edgePtr = *it2;
+                CEdgePtr edgePtr = m_edges[i];
                 size_t ID1, ID2;
 
                 edgePtr->getNodesID( ID1, ID2 );
 
                 if ( ( ID1 == ID ) || ( ID2 == ID )  )
                     deleteEdge( edgePtr->getID() );
+                else
+                    i++;
+
             }
 
         }
@@ -271,7 +272,6 @@ namespace UPGMpp
                         break;
                     }
                 }
-
 
                 // Delete the edge from the edges vector
                 m_edges.erase( it );

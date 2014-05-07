@@ -12,6 +12,7 @@
 # ----------------------------------------------------------------------------
 
 PROJECT(UPGMplusplus)
+SET(PROJECT_NAME "UPGMplusplus")
 
 if(COMMAND cmake_policy)
 	cmake_policy(SET CMP0005 OLD)
@@ -22,7 +23,7 @@ CMAKE_MINIMUM_REQUIRED(VERSION 2.4)
 if(COMMAND cmake_policy)
       cmake_policy(SET CMP0003 NEW)
 endif(COMMAND cmake_policy)
- 
+
 list(APPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/cmake)
 
 # EIGEN
@@ -34,7 +35,7 @@ set(Boost_USE_STATIC_LIBS OFF)
 set(Boost_USE_MULTITHREADED ON)  
 set(Boost_USE_STATIC_RUNTIME OFF) 
 
-find_package(Boost 1.55.0 COMPONENTS filesystem serialization REQUIRED) 
+find_package(Boost 1.49.0 COMPONENTS filesystem serialization REQUIRED) 
 
 include_directories(${Boost_INCLUDE_DIRS}) 
 
@@ -47,16 +48,6 @@ include_directories(${Boost_INCLUDE_DIRS})
 # ---------------------------------------------
 # TARGET:
 # ---------------------------------------------
-
-#FILE(GLOB aux_srcs1 ${CMAKE_SOURCE_DIR}/src/*.cpp)
-#FILE(GLOB aux_srcs2 ${CMAKE_SOURCE_DIR}/src/*.h)
-#SET(SRCS ${aux_srcs1} ${aux_srcs2})
-
-
-# Maybe this is redundant with the lines above...
-#set( CMAKE_CXX_FLAGS "-pg")
-#SET( CMAKE_EXE_LINKER_FLAGS  "-pg")
-
 
 # Create UPGM++ libraries and add include directories to the examples
 SET( UPGM++_LIBRARIES "base;training;inference" )
@@ -102,4 +93,5 @@ ENDFOREACH( EXAMPLE ${UPGM++_EXAMPLES} )
 
 configure_file(${PROJECT_NAME}Config.cmake.in
   "${PROJECT_BINARY_DIR}/${PROJECT_NAME}Config.cmake" @ONLY)
-
+  
+INSTALL(FILES cmake/FindUPGMplusplus.cmake DESTINATION ${CMAKE_ROOT}/Modules/)

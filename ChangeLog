@@ -7,6 +7,7 @@ TODOs:
 
 
 Alpha 0.0.5 (03-04-2014)
+- [BASE] Fixed error in RemoveNode from CGraph function.
 - [BASE] CNode, CEdge, CNodeType, CEdgeType: added asserts for checking the size of vectors that are to be used to set a member vector, e.g., m_features = features -> assert ( features.size() == n_features ).
 - [BASE] Added the posibility of specifying the feature names in an edge type.
 - [BASE] Added the posibility of specifying the class names and feature names in a node type.
