@@ -23,7 +23,7 @@ CMAKE_MINIMUM_REQUIRED(VERSION 2.4)
 if(COMMAND cmake_policy)
       cmake_policy(SET CMP0003 NEW)
 endif(COMMAND cmake_policy)
-
+ 
 list(APPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/cmake)
 
 # EIGEN
@@ -35,7 +35,7 @@ set(Boost_USE_STATIC_LIBS OFF)
 set(Boost_USE_MULTITHREADED ON)  
 set(Boost_USE_STATIC_RUNTIME OFF) 
 
-find_package(Boost 1.49.0 COMPONENTS filesystem serialization REQUIRED) 
+find_package(Boost 1.46.1 COMPONENTS filesystem serialization REQUIRED)
 
 include_directories(${Boost_INCLUDE_DIRS}) 
 
