@@ -1,4 +1,27 @@
+# - Try to find UPGMplusplus lib
+#
+#
+# Once done this will define
+#
+#  UPGMplusplus_LIBRARIES - UPGMplusplus libraries
+#  UPGMplusplus_INCLUDE_DIRS - Include directories of that libraries
+#
+# 2014, José Raúl Ruiz Sarmiento <jotaraul@uma.es>
+#
+
+SET( UPGM++_LIBRARIES "base;training;inference" )
+
+FOREACH( LIBRARY ${UPGM++_LIBRARIES} )
+
+	SET(LIBRARY_PATH @CMAKE_INSTALL_PREFIX@/lib/)
+	SET(UPGMplusplus_LIBRARIES ${UPGMplusplus_LIBRARIES};${LIBRARY_PATH}libUPGMplusplus-${LIBRARY}.so )
 
 
-SET(@PROJECT_NAME@_INCLUDE_DIRS @INC_DIR@)
-SET(@PROJECT_NAME@_LIBRARIES @LIBRARIES@)
+	SET(INCLUDES_PATH @CMAKE_INSTALL_PREFIX@/include/UPGMplusplus)
+	SET(UPGMplusplus_INCLUDE_DIRS ${UPGMplusplus_INCLUDE_DIRS};${INCLUDES_PATH}/${LIBRARY})
+	
+
+ENDFOREACH( LIBRARY ${UPGM++_LIBRARIES} )
+
+MESSAGE("UPGMplusplus_LIBRARIES: " ${UPGMplusplus_LIBRARIES})
+MESSAGE("UPGMplusplus_INCLUDE_DIRS: " ${UPGMplusplus_INCLUDE_DIRS})

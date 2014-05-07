@@ -19,6 +19,7 @@ FOREACH( LIBRARY ${UPGM++_LIBRARIES} )
 	     NAMES libUPGMplusplus-${LIBRARY}.so             
 	     PATHS 
 	     ${CMAKE_INSTALL_PREFIX}/lib
+	     NO_DEFAULT_PATH
 	     )
 
 	if(${LIBRARY}_LIBRARY)
@@ -35,6 +36,7 @@ FOREACH( LIBRARY ${UPGM++_LIBRARIES} )
 		NAMES	${LIBRARY}
 		PATHS
 		${CMAKE_INSTALL_PREFIX}/include/UPGMplusplus
+		NO_DEFAULT_PATH
 		)
 		
 		
