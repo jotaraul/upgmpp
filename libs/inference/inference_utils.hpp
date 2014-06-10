@@ -25,6 +25,8 @@ namespace UPGMpp
                                TInferenceOptions &options,
                                std::vector<std::vector<Eigen::VectorXd> > &messages,
                                bool maximize = true);
+
+    extern int fordFulkerson(MatrixXd &graph, int s, int t, VectorXi &cut);
 }
 
 #endif

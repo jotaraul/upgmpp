@@ -314,6 +314,9 @@ int main (int argc, char* argv[])
     double totalSuccess_ICM     = 0;
     double totalSuccess_Exact   = 0;
     double totalSuccess_LBP     = 0;
+    double totalSuccess_MaxNodePot     = 0;
+    double totalSuccess_AlphaExpansion = 0;
+
     double totalNumberOfNodes   = 0;
 
     //
@@ -444,12 +447,33 @@ int main (int argc, char* argv[])
         CDecodeICMGreedy decodeICMGreedy;
         CDecodeExact decodeExact;
         CDecodeLBP decodeLBP;
+        CDecodeAlphaExpansion decodeAlphaExpansion;
+        CDecodeMaxNodePot decodeMaxNodePot;
 
         TInferenceOptions options;
         options.maxIterations = 100;
 
         std::map<size_t,size_t> resultsMap;
         std::map<size_t,size_t>::iterator it;
+        double success;
+
+        //
+        // MaxNodePot
+        //
+
+        decodeMaxNodePot.setOptions( options );
+        decodeMaxNodePot.decode( graph, resultsMap );
+
+        success = 0;
+
+        for ( it = resultsMap.begin(); it != resultsMap.end(); it++ )
+        {
+            if ( it->second == groundTruth[ it->first ])
+            {
+                totalSuccess_MaxNodePot++;
+                success++;
+            }
+        }
 
         //
         // Greedy
@@ -458,7 +482,7 @@ int main (int argc, char* argv[])
         decodeICMGreedy.setOptions( options );
         decodeICMGreedy.decode( graph, resultsMap );
 
-        double success = 0;
+        success = 0;
 
         for ( it = resultsMap.begin(); it != resultsMap.end(); it++ )
         {
@@ -534,6 +558,26 @@ int main (int argc, char* argv[])
             }
         }
 
+        //
+        // ALPHA-EXPANSION
+        //
+
+        options.maxIterations = 10000;
+
+        decodeAlphaExpansion.setOptions( options );
+        decodeAlphaExpansion.decode( graph, resultsMap );
+
+        success = 0;
+
+        for ( it = resultsMap.begin(); it != resultsMap.end(); it++ )
+        {
+            if ( it->second == groundTruth[ it->first ])
+            {
+                totalSuccess_AlphaExpansion++;
+                success++;
+            }
+        }
+
     }
 
     cout << endl;
@@ -541,10 +585,12 @@ int main (int argc, char* argv[])
     cout << "              PGM PERFORMANCE " << endl;
     cout << "---------------------------------------------" << endl << endl;
 
+    cout << "Total MaxNod success: " << 100*(totalSuccess_MaxNodePot / totalNumberOfNodes) << "%" << endl;
     cout << "Total Greedy success: " << 100*(totalSuccess_Greedy / totalNumberOfNodes) << "%" << endl;
     cout << "Total ICM    success: " << 100*(totalSuccess_ICM / totalNumberOfNodes) << "%" << endl;
     cout << "Total Exact  success: " << 100*(totalSuccess_Exact / totalNumberOfNodes) << "%" << endl;
     cout << "Total LBP    success: " << 100*(totalSuccess_LBP / totalNumberOfNodes) << "%" << endl;
+    cout << "Total AlphaE success: " << 100*(totalSuccess_AlphaExpansion / totalNumberOfNodes) << "%" << endl;
 
     cout << endl;
 

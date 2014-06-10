@@ -11,6 +11,7 @@
 #  NOTE: CMake can be obtained at http://www.cmake.org/
 # ----------------------------------------------------------------------------
 
+
 PROJECT(UPGMplusplus)
 SET(PROJECT_NAME "UPGMplusplus")
 
@@ -25,6 +26,11 @@ if(COMMAND cmake_policy)
 endif(COMMAND cmake_policy)
 
 list(APPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/cmake)
+
+
+#------------------------------------------------------------------------------#
+#                                 DEPENDENCIES
+#------------------------------------------------------------------------------#
 
 # EIGEN
 find_package(Eigen3 REQUIRED)
@@ -45,9 +51,9 @@ include_directories(${Boost_INCLUDE_DIRS})
 #find_path(libLBGS_LIBRARY_DIR "./" CACHE FILEPATH "Directory of the libBFGS library directory")
 
 
-# ---------------------------------------------
-# TARGET:
-# ---------------------------------------------
+#------------------------------------------------------------------------------#
+#                                  TARGET
+#------------------------------------------------------------------------------#
 
 # Create UPGM++ libraries and add include directories to the examples
 SET( UPGM++_LIBRARIES "base;training;inference" )
@@ -67,8 +73,10 @@ SET(INC_DIR ${INC_DIR}${EIGEN3_INCLUDE_DIR}\;)
 SET(INC_DIR ${INC_DIR}${libLBFGS_INCLUDE_DIR})
 
 
-# Enable GCC profiling (GCC only)
-# ===================================================
+#------------------------------------------------------------------------------#
+#                         Enable GCC profiling (GCC only)
+#------------------------------------------------------------------------------#
+
 IF(CMAKE_COMPILER_IS_GNUCXX)
 	SET(ENABLE_PROFILING OFF CACHE BOOL "Enable profiling in the GCC compiler (Add flags: -g -pg)")
 ENDIF(CMAKE_COMPILER_IS_GNUCXX)
@@ -81,18 +89,61 @@ IF(UNIX)
 	LINK_DIRECTORIES("${CMAKE_CURRENT_SOURCE_DIR}")
 ENDIF(UNIX)
 
-# Create examples
-SET( UPGM++_EXAMPLES "different_node_types;MAP_and_marginal_inference;pre_computed_weights;saving_and_loading_graphs;synthetic_data;training_example" )
 
-FOREACH( EXAMPLE ${UPGM++_EXAMPLES} )
-	# Define the executable target:
-	ADD_EXECUTABLE(${EXAMPLE} ${CMAKE_SOURCE_DIR}/examples/${EXAMPLE}/example.cpp)
-	# Link the executable
-        TARGET_LINK_LIBRARIES(${EXAMPLE} base training inference ${Boost_LIBRARIES})
-ENDFOREACH( EXAMPLE ${UPGM++_EXAMPLES} )
+#------------------------------------------------------------------------------#
+#                                  EXAMPLES
+#------------------------------------------------------------------------------#
+
+SET( BUILD_EXAMPLES ON CACHE BOOL "Build examples?")
+
+IF(BUILD_EXAMPLES)
+	
+	# Create examples
+	SET( UPGM++_EXAMPLES "different_node_types;MAP_and_marginal_inference;pre_computed_weights;saving_and_loading_graphs;synthetic_data;training_example" )
+	
+	FOREACH( EXAMPLE ${UPGM++_EXAMPLES} )
+		# Define the executable target:
+		ADD_EXECUTABLE(${EXAMPLE} ${CMAKE_SOURCE_DIR}/examples/${EXAMPLE}/example.cpp)
+		# Link the executable
+	        TARGET_LINK_LIBRARIES(${EXAMPLE} base training inference ${Boost_LIBRARIES})
+	ENDFOREACH( EXAMPLE ${UPGM++_EXAMPLES} )
+
+ENDIF(BUILD_EXAMPLES)
 
 configure_file(${PROJECT_NAME}Config.cmake.in
   "${PROJECT_BINARY_DIR}/${PROJECT_NAME}Config.cmake" @ONLY)
-  
-#INSTALL(FILES cmake/FindUPGMplusplus.cmake DESTINATION ${CMAKE_ROOT}/Modules/)
-INSTALL(FILES ${PROJECT_BINARY_DIR}/${PROJECT_NAME}Config.cmake DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/cmake/${PROJECT_NAME})
+
+
+#------------------------------------------------------------------------------#
+#                                 TESTS
+#------------------------------------------------------------------------------#
+
+SET( BUILD_TESTS OFF CACHE BOOL "Build tests?")
+
+IF(BUILD_TESTS)
+
+	# Create tests
+	SET( UPGM++_TESTS "graph_cuts" )
+	
+	FOREACH( TEST ${UPGM++_TESTS} )
+		# Define the executable target:
+		ADD_EXECUTABLE(${TEST} ${CMAKE_SOURCE_DIR}/tests/${TEST}/test.cpp)
+		# Link the executable
+	        TARGET_LINK_LIBRARIES(${TEST} base training inference ${Boost_LIBRARIES})
+	ENDFOREACH( TEST ${UPGM++_TESTS} )
+
+
+ENDIF(BUILD_TESTS)
+
+
+#------------------------------------------------------------------------------#
+#                                INSTALL (UNIX)
+#------------------------------------------------------------------------------#
+
+# PREPARE INSTALL FILES
+
+IF(UNIX)
+	#INSTALL(FILES cmake/FindUPGMplusplus.cmake DESTINATION ${CMAKE_ROOT}/Modules/)
+	INSTALL(FILES ${PROJECT_BINARY_DIR}/${PROJECT_NAME}Config.cmake DESTINATION 	${CMAKE_INSTALL_PREFIX}/lib/cmake/${PROJECT_NAME})
+ENDIF(UNIX)
+

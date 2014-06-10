@@ -52,6 +52,7 @@ namespace UPGMpp
         std::multimap<size_t,CEdgePtr>   m_edges_f; //!< Vectof of fast access to all the edges where a node appears.
         std::vector<CEdgePtr>            m_edges;   //!< Vector of graph edges.
         std::vector<CNodePtr>            m_nodes;   //!< Vector of graph nodes.
+        std::vector<CNodeTypePtr>        m_nodeTypes; //!< Vector of node types.
         size_t                           m_id;      //!< Graph ID.
 
         /** Private function for obtaning the ID of a new graph.
@@ -81,7 +82,22 @@ namespace UPGMpp
         /** Function for adding a node to the graph.
          * \param node: Smart pointer to the node to add.
          */
-        inline void     addNode( CNodePtr node ) { m_nodes.push_back(node); }        
+        void     addNode( CNodePtr node )
+        {
+            m_nodes.push_back(node);
+
+            bool nodeTypeAlreadyInserted = false;
+
+            for ( size_t i = 0; i < m_nodeTypes.size(); i++ )
+                if ( m_nodeTypes[i]->getID() == node->getType()->getID() )
+                {
+                    nodeTypeAlreadyInserted = true;
+                    break;
+                }
+
+            if ( !nodeTypeAlreadyInserted )
+                m_nodeTypes.push_back(node->getType());
+        }
 
         /** Get the graph node laying in a certain position of the vector of nodes.
          * \param index: Node position in that vector.
@@ -128,6 +144,62 @@ namespace UPGMpp
             return emptyNodePtr;
         }
 
+        /** Set the type of a node. This method is consistent with the internal
+          * vector for storing the different types of the nodes within this graph.
+          * If the function setType of a node is used instead this method,
+          * this vector could became inconsistent.
+          * /param nodePtr node to change.
+          * /param nodeTypePtr node type to set.
+          */
+        void setNodeType( CNodePtr nodePtr, CNodeTypePtr nodeTypePtr)
+        {
+            size_t previousNodeTypeID = nodePtr->getType()->getID();
+            nodePtr->setType( nodeTypePtr );
+            size_t nodeTypeID = nodeTypePtr->getID();
+
+            // Check if other nodes have the same nodeType, and delete that type if not.
+
+            bool nodeTypeStillInUse = false;
+
+            for ( size_t i = 0; i < m_nodes.size(); i++ )
+                if ( m_nodes[i]->getType()->getID() == previousNodeTypeID )
+                {
+                    nodeTypeStillInUse = true;
+                    break;
+                }
+
+            if ( !nodeTypeStillInUse )
+            {
+                std::vector<CNodeTypePtr>::iterator it;
+
+                for ( it = m_nodeTypes.begin(); it != m_nodeTypes.end(); it++ )
+                {
+                    CNodeTypePtr nodeTypePtrAux = *it;
+
+                    if ( nodeTypePtrAux->getID() == previousNodeTypeID )
+                    {
+                        m_nodeTypes.erase( it );
+                        break;
+                    }
+                }
+            }
+
+            // Check if the node type already exists
+
+            bool nodeTypeAlreadyInserted = false;
+
+            for ( size_t i = 0; i < m_nodeTypes.size(); i++ )
+                if ( m_nodeTypes[i]->getID() == nodeTypeID )
+                {
+                    nodeTypeAlreadyInserted = true;
+                    break;
+                }
+
+            if ( !nodeTypeAlreadyInserted )
+                m_nodeTypes.push_back(nodeTypePtr);
+
+        }
+
         /** Get the vector of edges.
          * \param v_edges: vector to copy the edge smart pointers.
          */
@@ -136,7 +208,12 @@ namespace UPGMpp
         /** Get the vector of edges.
          * \return v_edges: a copy of the vector of edge smart pointers.
          */
-        inline std::vector<CEdgePtr> getEdges() { return m_edges; }
+        inline std::vector<CEdgePtr> getEdges() const { return m_edges; }
+
+        /** Get a reference the vector of edges.
+         * \return v_edges: a reference to the vector of edge smart pointers.
+         */
+        inline std::vector<CEdgePtr>& getEdges() { return m_edges; }
 
         /** Get a certain edge given its position in the edges vector.
          * \param index: Position in the edges vector.
@@ -171,6 +248,11 @@ namespace UPGMpp
             return emptyEdgePtr;
         }
 
+        /** Get a reference the vector of nodeTypes used in this graph.
+         * \return Reference to the nodeTypes used in the graph.
+         */
+        std::vector<CNodeTypePtr>& getNodeTypes(){ return m_nodeTypes; }
+
         /** Add an edge to the graph.
          * \param edge: Smart pointer to the edge.
          */
@@ -194,6 +276,7 @@ namespace UPGMpp
          */
         void deleteNode( size_t ID )
         {
+
             // Remove from the vector of nodes
 
             std::vector<CNodePtr>::iterator it;
@@ -206,8 +289,39 @@ namespace UPGMpp
                     break;
             }
 
+            size_t nodeTypeID = (*it)->getType()->getID();
+
+            // Remove!
+
             if ( it != m_nodes.end() )
                 m_nodes.erase( it );
+
+            // Check if other nodes have the same nodeType, and delete that type if not.
+
+            bool nodeTypeStillInUse = false;
+
+            for ( size_t i = 0; i < m_nodes.size(); i++ )
+                if ( m_nodes[i]->getType()->getID() == nodeTypeID )
+                {
+                    nodeTypeStillInUse = true;
+                    break;
+                }
+
+            if ( !nodeTypeStillInUse )
+            {
+                std::vector<CNodeTypePtr>::iterator it;
+
+                for ( it = m_nodeTypes.begin(); it != m_nodeTypes.end(); it++ )
+                {
+                    CNodeTypePtr nodeTypePtr = *it;
+
+                    if ( nodeTypePtr->getID() == nodeTypeID )
+                    {
+                        m_nodeTypes.erase( it );
+                        break;
+                    }
+                }
+            }
 
             // Remove edges than contain that node from m_edges and m_edges_f
 
@@ -386,7 +500,8 @@ namespace UPGMpp
             for ( it = classes.begin(); it != classes.end(); it++ )
             {
                 CNodePtr node = getNodeWithID( it->first );
-                unlikelihood *= node->getPotentials()(classes[node->getID()]);
+                //unlikelihood *= node->getPotentials()(classes[node->getID()]);
+                unlikelihood += std::log(node->getPotentials()(classes[node->getID()]));
             }
 
             for ( size_t index = 0; index < N_edges; index++ )
@@ -398,15 +513,78 @@ namespace UPGMpp
                 size_t ID2 = n2->getID();
 
                 if ( ID1 > ID2 )
-                    unlikelihood *= edge->getPotentials()(classes[ID2],classes[ID1]);
+                    //unlikelihood *= edge->getPotentials()(classes[ID2],classes[ID1]);
+                    unlikelihood += std::log(edge->getPotentials()(classes[ID2],classes[ID1]));
                 else
-                    unlikelihood *= edge->getPotentials()(classes[ID1],classes[ID2]);
+                    unlikelihood += std::log(edge->getPotentials()(classes[ID1],classes[ID2]));
 
             }
 
-            unlikelihood = std::log( unlikelihood );
+            //unlikelihood = std::log( unlikelihood );
 
             return unlikelihood;
+        }
+
+        void getBoundGraph( CGraph &boundGraph, std::map<size_t,size_t> states )
+        {
+            // Copy the graph
+            for ( size_t node = 0; node < m_nodes.size(); node++ )
+            {
+                CNodePtr nodePtr(new CNode(*m_nodes[node]));
+
+                boundGraph.addNode( nodePtr );
+            }
+
+            for ( size_t edge = 0; edge < m_edges.size(); edge++ )
+            {
+                CEdgePtr edgePtr( new CEdge(*m_edges[edge]));
+                boundGraph.addEdge( edgePtr );
+            }
+
+            for ( std::map<size_t,size_t>::iterator it = states.begin(); it != states.end(); it++ )
+            {
+                size_t nodeID = it->first;
+                size_t nodeState = it->second;
+
+                double nodePotential = boundGraph.getNodeWithID( nodeID )->getPotentials()( nodeState );
+
+                pair<multimap<size_t,CEdgePtr>::iterator,multimap<size_t,CEdgePtr>::iterator > neighbors;
+
+                neighbors = boundGraph.getEdgesF().equal_range(nodeID);
+
+                for ( multimap<size_t,CEdgePtr>::iterator it = neighbors.first; it != neighbors.second; it++ )
+                {
+                    size_t neighborID;
+                    size_t ID1, ID2;
+
+                    CEdgePtr edgePtr( (*it).second );
+
+                    edgePtr->getNodesID(ID1,ID2);
+                    Eigen::MatrixXd edgePotentials = edgePtr->getPotentials();
+                    Eigen::VectorXd newPotentials;
+
+                    if ( ID1 == nodeID )
+                    {
+                        CNodePtr nodePtr                = boundGraph.getNodeWithID( ID1 );
+                        Eigen::VectorXd &nodePotentials = nodePtr->getPotentials();
+
+                        newPotentials = nodePotential * (edgePotentials.row( nodeState ).transpose()).cwiseProduct( nodePotentials );
+                        nodePtr->setPotentials( newPotentials );
+                    }
+                    else
+                    {
+                        CNodePtr nodePtr                = boundGraph.getNodeWithID( ID2 );
+                        Eigen::VectorXd &nodePotentials = nodePtr->getPotentials();
+
+                        newPotentials = nodePotential * edgePotentials.col( nodeState ).cwiseProduct( nodePotentials );
+                        nodePtr->setPotentials( newPotentials );
+                    }
+                }
+
+                boundGraph.deleteNode( nodeID );
+            }
+
+
         }
 
         //

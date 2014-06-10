@@ -1,4 +1,3 @@
-
 /*---------------------------------------------------------------------------*
  |                               UPGM++                                      |
  |                   Undirected Graphical Models in C++                      |
@@ -20,73 +19,50 @@
  |                                                                           |
  *---------------------------------------------------------------------------*/
 
-#ifndef _UPGMpp_DECODING_
-#define _UPGMpp_DECODING_
 
 #include "base.hpp"
-#include "inference_utils.hpp"
+#include "training.hpp"
+#include "decoding.hpp"
+#include "inference.hpp"
 
-namespace UPGMpp
+#include <iostream>
+#include <math.h>
+
+// C++ program for implementation of Ford Fulkerson algorithm
+#include <queue>
+
+
+using namespace UPGMpp;
+using namespace Eigen;
+using namespace std;
+
+
+// Driver program to test above functions
+int main()
 {
-    class CMAPDecoder
-    {
-    protected:
-        TInferenceOptions                       m_options;
-        std::map<size_t,std::vector<size_t> >   m_mask;
 
-    public:
+    MatrixXd graph(6,6);
 
-        virtual void decode( CGraph &graph, std::map<size_t,size_t> &results ) = 0;
+    graph <<  0.0, 16.0, 13.0, 0.0, 0.0, 0.0,
+                0.0, 0.0, 10.0, 12.0, 0.0, 0.0,
+                0.0, 4.0, 0.0, 0.0, 14.0, 0.0,
+                0.0, 0.0, 9.0, 0.0, 0.0, 20.0,
+                0.0, 0.0, 0.0, 7.0, 0.0, 4.0,
+                0.0, 0.0, 0.0, 0.0, 0.0, 0.0;
 
-        inline void setOptions ( TInferenceOptions &options ) { m_options = options; }
 
-        inline void setMask ( std::map<size_t,std::vector<size_t> > &mask )
-            { m_mask = mask; }
+    size_t N_nodes = graph.cols();
+    VectorXi cut(N_nodes);
+    cut.setZero();
 
-    };
+    cout << "The maximum possible flow is " << fordFulkerson(graph, 0, 5, cut) << endl;
 
-    class CDecodeMaxNodePot : public CMAPDecoder
-    {
-    public:
-        void decode( CGraph &graph, std::map<size_t,size_t> &results );
-    };
+    cout << "The minimun cut is: ";
 
-    class CDecodeICM : public CMAPDecoder
-    {
-    public:
-        void decode( CGraph &graph, std::map<size_t,size_t> &results );
-    };
+    for ( int i=0; i<N_nodes; i++ )
+        cout << cut(i) << " ";
 
-    class CDecodeICMGreedy : public CMAPDecoder
-    {
-    public:
-        void decode(CGraph &graph, std::map<size_t, size_t> &results);
-    };
+    cout << endl;
 
-    class CDecodeExact : public CMAPDecoder
-    {
-    public:
-        void decode(CGraph &graph, std::map<size_t, size_t> &results);
-    };
-
-    class CDecodeLBP : public CMAPDecoder
-    {
-    public:
-        void decode(CGraph &graph, std::map<size_t, size_t> &results);
-    };
-
-    class CDecodeGraphCuts : public CMAPDecoder
-    {
-    public:
-        void decode(CGraph &graph, std::map<size_t, size_t> &results);
-    };
-
-    class CDecodeAlphaExpansion : public CMAPDecoder
-    {
-    public:
-        void decode(CGraph &graph, std::map<size_t, size_t> &results);
-    };
-
+    return 0;
 }
-
-#endif

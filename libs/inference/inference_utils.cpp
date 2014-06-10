@@ -3,6 +3,7 @@
 #include "inference_utils.hpp"
 
 #include <vector>
+#include <queue>
 
 using namespace UPGMpp;
 using namespace std;
@@ -189,4 +190,146 @@ size_t UPGMpp::messagesLBP(CGraph &graph,
     } // Iterations
 
     return 1;
+}
+
+
+
+
+// For-Fulkerson implemetation for max-flow min-cut computation adapted from:
+// http://www.geeksforgeeks.org/ford-fulkerson-algorithm-for-maximum-flow-problem
+
+// Number of vertices in given graph
+//#define V 6
+
+void getFinalCut(MatrixXd &rGraph, int s, int t, VectorXi &cut)
+{
+    size_t N_nodes = rGraph.cols();
+    bool visited[N_nodes];
+    memset(visited, 0, sizeof(visited));
+
+    queue<int> q;
+    q.push(s);
+
+    cut(s) = 1;
+    visited[s] = true;
+
+    // Standard BFS Loop
+    while (!q.empty())
+    {
+        int u = q.front();
+        q.pop();
+
+        for (int v=0; v<N_nodes; v++)
+        {
+            //cout << "Visiting from " << u << " to " << v << " residual " << rGraph(u,v) << endl;
+            if (visited[v]==false && rGraph(u,v) > 0)
+            {
+                q.push(v);
+                visited[v] = true;
+                cut(v) = 1;
+            }
+        }
+    }
+
+}
+
+/* Returns true if there is a path from source 's' to sink 't' in
+  residual graph. Also fills parent[] to store the path */
+bool bfs(MatrixXd &rGraph, int s, int t, int parent[])
+{
+    size_t N_nodes = rGraph.cols();
+    // Create a visited array and mark all vertices as not visited
+    bool visited[N_nodes];
+    memset(visited, 0, sizeof(visited));
+
+    // Create a queue, enqueue source vertex and mark source vertex
+    // as visited
+    queue <int> q;
+    q.push(s);
+    visited[s] = true;
+
+    // Standard BFS Loop
+    while (!q.empty())
+    {
+        int u = q.front();
+        q.pop();
+
+        for (int v=0; v<N_nodes; v++)
+        {
+            if (visited[v]==false && rGraph(u,v) > 0)
+            {
+                q.push(v);
+                parent[v] = u;
+                visited[v] = true;
+            }
+        }
+    }
+
+    // If we reached sink in BFS starting from source, then return
+    // true, else false
+    return (visited[t] == true);
+}
+
+// Returns tne maximum flow from s to t in the given graph
+int UPGMpp::fordFulkerson(MatrixXd &graph, int s, int t, VectorXi &cut)
+{
+    size_t N_nodes = graph.cols();
+    int u, v;
+
+    // Create a residual graph and fill the residual graph with
+    // given capacities in the original graph as residual capacities
+    // in residual graph
+    MatrixXd rGraph; // Residual graph where rGraph[i][j] indicates
+    rGraph.resize(N_nodes,N_nodes);
+                     // residual capacity of edge from i to j (if there
+                     // is an edge. If rGraph[i][j] is 0, then there is not)
+    for (u = 0; u < N_nodes; u++)
+        for (v = 0; v < N_nodes; v++)
+             rGraph(u,v) = graph(u,v);
+
+    int parent[N_nodes];  // This array is filled by BFS and to store path
+
+    double max_flow = 0;  // There is no flow initially
+
+
+
+    // Augment the flow while tere is path from source to sink
+    while (bfs(rGraph, s, t, parent))
+    {
+        // Find minimum residual capacity of the edhes along the
+        // path filled by BFS. Or we can say find the maximum flow
+        // through the path found.
+        double path_flow = std::numeric_limits<double>::max();
+        for (v=t; v!=s; v=parent[v])
+        {
+            u = parent[v];
+            path_flow = min(path_flow, rGraph(u,v));
+        }
+
+        //cout << "Path flow: " << path_flow;
+
+        // update residual capacities of the edges and reverse edges
+        // along the path
+        for (v=t; v != s; v=parent[v])
+        {
+            u = parent[v];
+            rGraph(u,v) -= path_flow;
+            rGraph(v,u) += path_flow;
+        }
+
+        // Add path flow to overall flow
+        max_flow += path_flow;
+    }
+
+    getFinalCut(rGraph,s,t,cut);
+
+    cout << "The minimun cut is: ";
+
+    for ( int i=0; i<N_nodes; i++ )
+        cout << cut(i) << " ";
+
+    cout << endl;
+
+    // Return the overall flow
+    return max_flow;
 }

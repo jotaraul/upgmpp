@@ -168,6 +168,11 @@ namespace UPGMpp
          */
         inline CEdgeTypePtr getType() const { return m_type; }
 
+        /** Function for setting the edge type.
+          * \param edgeTypePtr: new edge type.
+          */
+        inline void setType( CEdgeTypePtr edgeTypePtr){ m_type = edgeTypePtr; }
+
         /** Function for retrieving the two nodes linked by the edge.
          * \param n1: First node of the edge.
          * \param n2: Second node of the edge.

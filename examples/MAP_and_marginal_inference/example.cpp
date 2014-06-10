@@ -92,7 +92,10 @@ int main (int argc, char* argv[])
 
 
     trainingDataset.addNodeType( simpleNodeType1Ptr );
-    trainingDataset.addEdgeType( simpleEdgeType1Ptr );
+
+    Eigen::VectorXi typeOfEdgeFeatures(N_edgeFeatures_type_1);
+    typeOfEdgeFeatures << 1,1,1;
+    trainingDataset.addEdgeType( simpleEdgeType1Ptr, typeOfEdgeFeatures );
 
     //
     // Create a set of training graphs
@@ -260,6 +263,8 @@ int main (int argc, char* argv[])
     CDecodeICM       decodeICM;
     CDecodeICMGreedy decodeICMGreedy;
     CDecodeExact     decodeExact;
+    CDecodeLBP       decodeLBP;
+    CDecodeAlphaExpansion decodeAlphaExpansion;
 
     TInferenceOptions options;
     options.maxIterations = 100;
@@ -289,6 +294,27 @@ int main (int argc, char* argv[])
 
     decodeExact.setOptions( options );
     decodeExact.decode( testGraph, resultsMap );
+
+    showResults( resultsMap );
+
+    std::cout << "-----------------------------------" << std::endl;
+    std::cout << "          ALPHA_EXPANSION " << std::endl;
+    std::cout << "-----------------------------------" << std::endl;
+
+    decodeAlphaExpansion.setOptions( options );
+    decodeAlphaExpansion.decode( testGraph, resultsMap );
+
+    showResults( resultsMap );
+
+    std::cout << "-----------------------------------" << std::endl;
+    std::cout << "              LBP " << std::endl;
+    std::cout << "-----------------------------------" << std::endl;
+
+    options.convergency = 0.0001;
+    options.maxIterations = 10;
+
+    decodeLBP.setOptions( options );
+    decodeLBP.decode( testGraph, resultsMap );
 
     showResults( resultsMap );
 

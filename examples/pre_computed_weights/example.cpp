@@ -770,7 +770,9 @@ int main (int argc, char* argv[])
  *
  *----------------------------------------------------------------------------*/
 
-    CDecodeICM      decodeICM;
+    CDecodeICM             decodeICM;
+    CDecodeAlphaExpansion  decodeAlpha;
+    CDecodeMaxNodePot      decodeMax;
 
     TInferenceOptions    options;
     options.maxIterations = 1000;
@@ -788,6 +790,30 @@ int main (int argc, char* argv[])
     std::cout << "---------------------------------------------" << std::endl;
 
     std::map<size_t,size_t>::iterator it;
+
+    for ( it = results.begin(); it != results.end(); it++ )
+    {
+        std::cout << "[" << it->first << "] " << it->second << std::endl;
+    }
+
+    decodeAlpha.setOptions( options );
+    decodeAlpha.decode( myGraph, results);
+
+    std::cout << "---------------------------------------------" << std::endl;
+    std::cout << "            RESULTS ALPHA EXPANSION " << std::endl;
+    std::cout << "---------------------------------------------" << std::endl;
+
+    for ( it = results.begin(); it != results.end(); it++ )
+    {
+        std::cout << "[" << it->first << "] " << it->second << std::endl;
+    }
+
+    decodeMax.setOptions( options );
+    decodeMax.decode( myGraph, results);
+
+    std::cout << "---------------------------------------------" << std::endl;
+    std::cout << "           RESULTS MAX NODE POTENTIAL " << std::endl;
+    std::cout << "---------------------------------------------" << std::endl;
 
     for ( it = results.begin(); it != results.end(); it++ )
     {
