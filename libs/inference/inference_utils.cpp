@@ -2,6 +2,9 @@
 
 #include "inference_utils.hpp"
 
+#include <boost/random.hpp>
+#include <boost/random/uniform_int.hpp>
+
 #include <vector>
 #include <queue>
 
@@ -160,10 +163,23 @@ size_t UPGMpp::messagesLBP(CGraph &graph,
                 // Set the message!
                 //
 
+                VectorXd smoothedOldMessage(newMessage.rows());
+                smoothedOldMessage.setZero();
+
+                double smoothing = options.particularD["smoothing"];
+
+                if ( smoothing != 0 )
+                   if ( nodeID == ID1 )
+                       smoothedOldMessage = (1-smoothing) * messages[ edgeIndex ][0];
+                   else
+                       smoothedOldMessage = (1-smoothing) * messages[ edgeIndex ][1];
+
+                cout << "New message:" << endl << newMessage << endl << "Smoothed" << endl << smoothedOldMessage << endl;
+
                 if ( nodeID == ID1 )
-                    messages[ edgeIndex ][0] = newMessage;
+                    messages[ edgeIndex ][0] = newMessage + smoothedOldMessage;
                 else
-                    messages[ edgeIndex ][1] = newMessage;
+                    messages[ edgeIndex ][1] = newMessage + smoothedOldMessage;
 
             }
 
@@ -323,13 +339,60 @@ int UPGMpp::fordFulkerson(MatrixXd &graph, int s, int t, VectorXi &cut)
 
     getFinalCut(rGraph,s,t,cut);
 
-    cout << "The minimun cut is: ";
+    /*cout << "The minimun cut is: ";
 
     for ( int i=0; i<N_nodes; i++ )
         cout << cut(i) << " ";
 
-    cout << endl;
+    cout << endl;*/
 
     // Return the overall flow
     return max_flow;
+}
+
+void UPGMpp::getMostProbableNodeAssignation( CGraph &graph,
+                                             map<size_t,size_t> &assignation,
+                                             TInferenceOptions &options)
+{
+    vector<CNodePtr> &nodes = graph.getNodes();
+    size_t N_nodes = nodes.size();
+
+    // Choose as initial class for all the nodes their more probable class
+    // according to the node potentials
+
+    for ( size_t index = 0; index < N_nodes; index++ )
+    {
+        size_t nodeMAP;
+        size_t ID = nodes[index]->getID();
+
+        nodes[index]->getPotentials( options.considerNodeFixedValues ).maxCoeff(&nodeMAP);
+        assignation[ID] = nodeMAP;
+    }
+}
+
+
+
+void UPGMpp::getRandomAssignation(CGraph &graph,
+                                  map<size_t,size_t> &assignation,
+                                  TInferenceOptions &options )
+{
+    static boost::mt19937 rng;
+
+    vector<CNodePtr> &nodes = graph.getNodes();
+
+    for ( size_t node = 0; node < nodes.size(); node++ )
+    {
+        // TODO: Check if a node has a fixed value and consider it
+
+        size_t N_classes = nodes[node]->getType()->getNumberOfClasses();
+
+        boost::uniform_int<> generator(0,N_classes-1);
+        int state = generator(rng);
+
+        assignation[nodes[node]->getID()] = state;
+    }
+
+    /*map<size_t,size_t>::iterator it;
+    for ( it = assignation.begin(); it != assignation.end(); it++ )
+        cout << "[" << it->first << "] " << it->second << endl;*/
 }

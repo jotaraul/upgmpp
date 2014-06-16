@@ -14,10 +14,17 @@ namespace UPGMpp
         size_t maxIterations;
         double convergency;
         bool   considerNodeFixedValues;
+        string initialAssignation; // Random, MaxNodePotential
+
+        // Particular options for the different methods
+        map<std::string,double>        particularD;
+        map<std::string,bool>          particularB;
+        map<std::string,std::string>   particularS;
 
         TInferenceOptions() : maxIterations( 100 ),
                               convergency( 0.0001),
-                              considerNodeFixedValues ( false )
+                              considerNodeFixedValues ( false ),
+                              initialAssignation( "MaxNodePotential")
         {}
     };
 
@@ -27,6 +34,14 @@ namespace UPGMpp
                                bool maximize = true);
 
     extern int fordFulkerson(MatrixXd &graph, int s, int t, VectorXi &cut);
+
+    void getMostProbableNodeAssignation( CGraph &graph,
+                                         std::map<size_t,size_t> &assignation,
+                                         TInferenceOptions &options);
+
+    void getRandomAssignation(CGraph &graph,
+                              std::map<size_t,size_t> &assignation,
+                              TInferenceOptions &options);
 }
 
 #endif

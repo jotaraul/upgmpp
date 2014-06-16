@@ -771,11 +771,13 @@ int main (int argc, char* argv[])
  *----------------------------------------------------------------------------*/
 
     CDecodeICM             decodeICM;
+    CDecodeWithRestarts    decodeWithRestarts;
     CDecodeAlphaExpansion  decodeAlpha;
+    CDecodeAlphaBetaSwap   decodeAlphaBeta;
     CDecodeMaxNodePot      decodeMax;
 
     TInferenceOptions    options;
-    options.maxIterations = 1000;
+    options.maxIterations = 100;
     options.convergency   = 0.0001;
 
     myGraph.computePotentials();
@@ -796,11 +798,38 @@ int main (int argc, char* argv[])
         std::cout << "[" << it->first << "] " << it->second << std::endl;
     }
 
+    options.particularS["method"] = "ICM";
+    options.particularD["numberOfRestarts"] = 1000;
+    decodeWithRestarts.setOptions( options );
+    decodeWithRestarts.decode( myGraph, results);
+
+    std::cout << "---------------------------------------------" << std::endl;
+    std::cout << "            RESULTS ICM with restarts " << std::endl;
+    std::cout << "---------------------------------------------" << std::endl;
+
+    for ( it = results.begin(); it != results.end(); it++ )
+    {
+        std::cout << "[" << it->first << "] " << it->second << std::endl;
+    }
+
     decodeAlpha.setOptions( options );
     decodeAlpha.decode( myGraph, results);
 
     std::cout << "---------------------------------------------" << std::endl;
     std::cout << "            RESULTS ALPHA EXPANSION " << std::endl;
+    std::cout << "---------------------------------------------" << std::endl;
+
+    for ( it = results.begin(); it != results.end(); it++ )
+    {
+        std::cout << "[" << it->first << "] " << it->second << std::endl;
+    }
+
+    options.maxIterations = 100;
+    decodeAlphaBeta.setOptions( options );
+    decodeAlphaBeta.decode( myGraph, results);
+
+    std::cout << "---------------------------------------------" << std::endl;
+    std::cout << "           RESULTS ALPHA BETA SWAP " << std::endl;
     std::cout << "---------------------------------------------" << std::endl;
 
     for ( it = results.begin(); it != results.end(); it++ )

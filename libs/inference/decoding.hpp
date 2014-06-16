@@ -38,7 +38,26 @@ namespace UPGMpp
 
         virtual void decode( CGraph &graph, std::map<size_t,size_t> &results ) = 0;
 
-        inline void setOptions ( TInferenceOptions &options ) { m_options = options; }
+        inline void setOptions ( TInferenceOptions &options )
+        {
+            m_options.maxIterations = options.maxIterations;
+            m_options.considerNodeFixedValues = options.considerNodeFixedValues;
+            m_options.convergency = options.convergency;
+            m_options.initialAssignation = options.initialAssignation;
+
+            // Instead of assign the different maps to the local options maps,
+            // just insert them. This permits to use default parameters in
+            // addiction to the user specified ones.
+
+            m_options.particularD.insert(options.particularD.begin(),
+                                         options.particularD.end());
+
+            m_options.particularB.insert(options.particularB.begin(),
+                                         options.particularB.end());
+
+            m_options.particularS.insert(options.particularS.begin(),
+                                         options.particularS.end());
+        }
 
         inline void setMask ( std::map<size_t,std::vector<size_t> > &mask )
             { m_mask = mask; }
@@ -84,6 +103,44 @@ namespace UPGMpp
     class CDecodeAlphaExpansion : public CMAPDecoder
     {
     public:
+
+        CDecodeAlphaExpansion()
+        {
+            // How to face supermodular potentials/energies. Options:
+            // "QPBO"
+            // "truncate"
+            // "ignore"
+            m_options.particularS["submodularApproach"] = "QPBO";
+        }
+
+        void decode(CGraph &graph, std::map<size_t, size_t> &results);
+    };
+
+    class CDecodeAlphaBetaSwap : public CMAPDecoder
+    {
+    public:
+
+        CDecodeAlphaBetaSwap()
+        {
+            // How to face supermodular potentials/energies. Options:
+            // "QPBO"
+            // "truncate"
+            // "ignore"
+            m_options.particularS["supermodularApproach"] = "originalQPBO";
+        }
+
+        void decode(CGraph &graph, std::map<size_t, size_t> &results);
+    };
+
+    class CDecodeWithRestarts : public CMAPDecoder
+    {
+    public:
+
+        CDecodeWithRestarts()
+        {
+            m_options.particularS["method"] = "ICM";
+        }
+
         void decode(CGraph &graph, std::map<size_t, size_t> &results);
     };
 

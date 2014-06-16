@@ -316,6 +316,7 @@ int main (int argc, char* argv[])
     double totalSuccess_LBP     = 0;
     double totalSuccess_MaxNodePot     = 0;
     double totalSuccess_AlphaExpansion = 0;
+    double totalSuccess_AlphaBetaSwap  = 0;
 
     double totalNumberOfNodes   = 0;
 
@@ -448,10 +449,12 @@ int main (int argc, char* argv[])
         CDecodeExact decodeExact;
         CDecodeLBP decodeLBP;
         CDecodeAlphaExpansion decodeAlphaExpansion;
+        CDecodeAlphaExpansion decodeAlphaBetaSwap;
         CDecodeMaxNodePot decodeMaxNodePot;
 
         TInferenceOptions options;
         options.maxIterations = 100;
+        options.initialAssignation = "Random";
 
         std::map<size_t,size_t> resultsMap;
         std::map<size_t,size_t>::iterator it;
@@ -543,6 +546,7 @@ int main (int argc, char* argv[])
 
         options.convergency = 0.0001;
         options.maxIterations = 10;
+        options.particularD["smoothing"] = 0.9; // A number between 0 and 1
 
         decodeLBP.setOptions( options );
         decodeLBP.decode( graph, resultsMap );
@@ -578,6 +582,26 @@ int main (int argc, char* argv[])
             }
         }
 
+        //
+        // ALPHA-BETA-SWAp
+        //
+
+        options.maxIterations = 100;
+
+        decodeAlphaBetaSwap.setOptions( options );
+        decodeAlphaBetaSwap.decode( graph, resultsMap );
+
+        success = 0;
+
+        for ( it = resultsMap.begin(); it != resultsMap.end(); it++ )
+        {
+            if ( it->second == groundTruth[ it->first ])
+            {
+                totalSuccess_AlphaBetaSwap++;
+                success++;
+            }
+        }
+
     }
 
     cout << endl;
@@ -585,12 +609,13 @@ int main (int argc, char* argv[])
     cout << "              PGM PERFORMANCE " << endl;
     cout << "---------------------------------------------" << endl << endl;
 
-    cout << "Total MaxNod success: " << 100*(totalSuccess_MaxNodePot / totalNumberOfNodes) << "%" << endl;
-    cout << "Total Greedy success: " << 100*(totalSuccess_Greedy / totalNumberOfNodes) << "%" << endl;
-    cout << "Total ICM    success: " << 100*(totalSuccess_ICM / totalNumberOfNodes) << "%" << endl;
-    cout << "Total Exact  success: " << 100*(totalSuccess_Exact / totalNumberOfNodes) << "%" << endl;
-    cout << "Total LBP    success: " << 100*(totalSuccess_LBP / totalNumberOfNodes) << "%" << endl;
-    cout << "Total AlphaE success: " << 100*(totalSuccess_AlphaExpansion / totalNumberOfNodes) << "%" << endl;
+    cout << "Total MaxNodePot success: " << 100*(totalSuccess_MaxNodePot / totalNumberOfNodes) << "%" << endl;
+    cout << "Total Greedy     success: " << 100*(totalSuccess_Greedy / totalNumberOfNodes) << "%" << endl;
+    cout << "Total ICM        success: " << 100*(totalSuccess_ICM / totalNumberOfNodes) << "%" << endl;
+    cout << "Total Exact      success: " << 100*(totalSuccess_Exact / totalNumberOfNodes) << "%" << endl;
+    cout << "Total LBP        success: " << 100*(totalSuccess_LBP / totalNumberOfNodes) << "%" << endl;
+    cout << "Total AlphaExpan success: " << 100*(totalSuccess_AlphaExpansion / totalNumberOfNodes) << "%" << endl;
+    cout << "Total AlphaBetaS success: " << 100*(totalSuccess_AlphaBetaSwap / totalNumberOfNodes) << "%" << endl;
 
     cout << endl;
 
