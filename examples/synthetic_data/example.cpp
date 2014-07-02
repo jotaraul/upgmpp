@@ -290,11 +290,14 @@ int main (int argc, char* argv[])
     // Set the training options
     //
     TTrainingOptions trainingOptions;
-    trainingOptions.showTrainingProgress = false;
-    trainingOptions.showTrainedWeights   = false;
+    trainingOptions.showTrainingProgress = true;
+    trainingOptions.showTrainedWeights   = true;
     trainingOptions.l2Regularization     = true;
-    trainingOptions.nodeLambda           = 10;
+    trainingOptions.nodeLambda           = 5;
     trainingOptions.edgeLambda           = 100;
+
+    //trainingOptions.trainingType = "decoding";
+    //trainingOptions.trainingType = "inference";
 
     trainingDataset.setTrainingOptions( trainingOptions );
 
@@ -314,6 +317,7 @@ int main (int argc, char* argv[])
     double totalSuccess_ICM     = 0;
     double totalSuccess_Exact   = 0;
     double totalSuccess_LBP     = 0;
+    double totalSuccess_TRPBP   = 0;
     double totalSuccess_MaxNodePot     = 0;
     double totalSuccess_AlphaExpansion = 0;
     double totalSuccess_AlphaBetaSwap  = 0;
@@ -448,6 +452,7 @@ int main (int argc, char* argv[])
         CDecodeICMGreedy decodeICMGreedy;
         CDecodeExact decodeExact;
         CDecodeLBP decodeLBP;
+        CDecodeTRPBP decodeTRPBP;
         CDecodeAlphaExpansion decodeAlphaExpansion;
         CDecodeAlphaExpansion decodeAlphaBetaSwap;
         CDecodeMaxNodePot decodeMaxNodePot;
@@ -562,6 +567,17 @@ int main (int argc, char* argv[])
             }
         }
 
+        options.convergency = 0.0001;
+        options.maxIterations = 10;
+        //options.particularD["smoothing"] = 0.9; // A number between 0 and 1
+
+        decodeTRPBP.setOptions( options );
+        decodeTRPBP.decode( graph, resultsMap );
+
+        for ( it = resultsMap.begin(); it != resultsMap.end(); it++ )
+            if ( it->second == groundTruth[ it->first ])
+                totalSuccess_TRPBP++;
+
         //
         // ALPHA-EXPANSION
         //
@@ -614,6 +630,7 @@ int main (int argc, char* argv[])
     cout << "Total ICM        success: " << 100*(totalSuccess_ICM / totalNumberOfNodes) << "%" << endl;
     cout << "Total Exact      success: " << 100*(totalSuccess_Exact / totalNumberOfNodes) << "%" << endl;
     cout << "Total LBP        success: " << 100*(totalSuccess_LBP / totalNumberOfNodes) << "%" << endl;
+    cout << "Total TRPBP      success: " << 100*(totalSuccess_TRPBP / totalNumberOfNodes) << "%" << endl;
     cout << "Total AlphaExpan success: " << 100*(totalSuccess_AlphaExpansion / totalNumberOfNodes) << "%" << endl;
     cout << "Total AlphaBetaS success: " << 100*(totalSuccess_AlphaBetaSwap / totalNumberOfNodes) << "%" << endl;
 

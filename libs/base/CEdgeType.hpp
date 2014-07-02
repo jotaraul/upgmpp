@@ -229,6 +229,11 @@ namespace UPGMpp
          */
         inline std::vector<Eigen::MatrixXd>& getWeights() { return m_weights; }
 
+        /** Returns the number of edge features
+          * \return The number of edge features.
+          */
+        inline size_t getNumberOfFeatures() { return m_nFeatures; }
+
 
         /** Set the name of the edge features.
          * \param newNames: names for the edge features.

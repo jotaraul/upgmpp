@@ -4,6 +4,8 @@
 
 #include <boost/random.hpp>
 #include <boost/random/uniform_int.hpp>
+#include <ctime>
+
 
 #include <vector>
 #include <queue>
@@ -15,14 +17,18 @@ using namespace Eigen;
 size_t UPGMpp::messagesLBP(CGraph &graph,
                             TInferenceOptions &options,
                             vector<vector<VectorXd> > &messages ,
-                            bool maximize )
+                            bool maximize,
+                            const vector<size_t> &tree)
 {
+
     const vector<CNodePtr> nodes = graph.getNodes();
     const vector<CEdgePtr> edges = graph.getEdges();
     multimap<size_t,CEdgePtr> edges_f = graph.getEdgesF();
 
     size_t N_nodes = nodes.size();
     size_t N_edges = edges.size();
+
+    bool is_tree = (tree.size()>0) ? true : false;
 
     graph.computePotentials();
 
@@ -32,26 +38,31 @@ size_t UPGMpp::messagesLBP(CGraph &graph,
 
     double totalSumOfMsgs = 0;
 
-    messages.resize( N_edges);
+    if ( !messages.size() )
+        messages.resize( N_edges);
 
     for ( size_t i = 0; i < N_edges; i++ )
     {
-        messages[i].resize(2);
+        if ( !messages[i].size() )
+        {
+            messages[i].resize(2);
 
-        size_t ID1, ID2;
-        edges[i]->getNodesID(ID1,ID2);
+            size_t ID1, ID2;
+            edges[i]->getNodesID(ID1,ID2);
 
-        // Messages from first node of the edge to the second one, so the size of
-        // the message has to be the same as the number of classes of the second node.
-        messages[i][0].resize( graph.getNodeWithID( ID2 )->getPotentials( options.considerNodeFixedValues ).rows() );
-        messages[i][0].fill(1);
-        // Just the opposite as before.
-        messages[i][1].resize( graph.getNodeWithID( ID1 )->getPotentials( options.considerNodeFixedValues ).rows() );
-        messages[i][1].fill(1);
+            // Messages from first node of the edge to the second one, so the size of
+            // the message has to be the same as the number of classes of the second node.
+            messages[i][0].resize( graph.getNodeWithID( ID2 )->getPotentials( options.considerNodeFixedValues ).rows() );
+            messages[i][0].fill(1);
+            // Just the opposite as before.
+            messages[i][1].resize( graph.getNodeWithID( ID1 )->getPotentials( options.considerNodeFixedValues ).rows() );
+            messages[i][1].fill(1);
+        }
 
         totalSumOfMsgs += messages[i][0].rows() + messages[i][1].rows();
 
     }
+
 
     //
     // Iterate until convergence or a certain maximum number of iterations is reached
@@ -68,6 +79,14 @@ size_t UPGMpp::messagesLBP(CGraph &graph,
         {
             const CNodePtr nodePtr = graph.getNode( nodeIndex );
             size_t nodeID          = nodePtr->getID();
+
+            // Check if we are calibrating a tree, and so if the node is not member of the tree,
+            // so we dont have to update its messages
+            if ( is_tree && ( std::find(tree.begin(), tree.end(), nodeID ) == tree.end() ) )
+            {
+                continue;
+                cout << "LEAVING" << endl;
+            }
 
             pair<multimap<size_t,CEdgePtr>::iterator,multimap<size_t,CEdgePtr>::iterator > neighbors;
 
@@ -86,6 +105,14 @@ size_t UPGMpp::messagesLBP(CGraph &graph,
                 CEdgePtr edgePtr( (*itNeigbhor).second );
                 edgePtr->getNodesID(ID1,ID2);
                 ( ID1 == nodeID ) ? neighborID = ID2 : neighborID = ID1;
+
+                // Check if we are calibrating a tree, and so if the neighbor node
+                // is not member of the tree, so we dont have to update its messages
+                if ( is_tree && ( std::find(tree.begin(), tree.end(), neighborID ) != tree.end() ))
+                {
+                    continue;
+                    cout << "LEAVING" << endl;
+                }
 
                 //
                 // Compute the message from current node as a product of all the
@@ -174,7 +201,7 @@ size_t UPGMpp::messagesLBP(CGraph &graph,
                    else
                        smoothedOldMessage = (1-smoothing) * messages[ edgeIndex ][1];
 
-                cout << "New message:" << endl << newMessage << endl << "Smoothed" << endl << smoothedOldMessage << endl;
+                //cout << "New message:" << endl << newMessage << endl << "Smoothed" << endl << smoothedOldMessage << endl;
 
                 if ( nodeID == ID1 )
                     messages[ edgeIndex ][0] = newMessage + smoothedOldMessage;
@@ -208,7 +235,120 @@ size_t UPGMpp::messagesLBP(CGraph &graph,
     return 1;
 }
 
+void UPGMpp::getSpanningTree( CGraph &graph, std::vector<size_t> &tree)
+{
+    // TODO: The efficiency of this method can be improved
 
+    // Reset tree
+    tree.clear();
+
+    static boost::mt19937 rng;
+    static bool firstExecution = true;
+
+    if ( firstExecution )
+    {
+        rng.seed(time(0));
+        firstExecution = false;
+    }
+
+    vector<CNodePtr> &v_nodes = graph.getNodes();
+    vector<CNodePtr> v_nodesToExplore;
+    map<size_t,size_t> nodesToExploreMap;
+    size_t N_nodes = v_nodes.size();
+
+    //cout << "Random: ";
+
+    for ( size_t i_node = 0; i_node < N_nodes; i_node++ )
+    {        
+        boost::uniform_real<> real_generator(0,1);
+        real_generator.reset();
+        double rand = real_generator(rng);
+
+        //cout << rand << " ";
+
+        if ( rand > 0.25 )
+        {
+            v_nodesToExplore.push_back( v_nodes[i_node] );
+            nodesToExploreMap[ v_nodes[i_node]->getID() ] =  v_nodesToExplore.size()-1;
+        }
+
+    }
+
+    //cout << endl;
+
+    //SHOW_VECTOR_NODES_ID("Nodes to explore: ", v_nodesToExplore)
+
+    size_t N_nodesToExplore = v_nodesToExplore.size();
+
+    if ( !N_nodesToExplore )
+        return;
+
+    bool nodeAdded = true;
+    vector<bool> v_nodesAdded( N_nodesToExplore, false );
+
+    //
+    // Randomly select the root node
+    //
+
+    boost::uniform_int<> generator(0,N_nodesToExplore-1);
+    int rand = generator(rng);
+
+    //cout << "Root:" << rand << endl;
+
+    v_nodesAdded[rand] = true;
+    multimap<size_t, CEdgePtr> &edgesF = graph.getEdgesF();
+
+    while ( nodeAdded )
+    {
+        nodeAdded = false;
+
+        for ( size_t i_node = 0; i_node < N_nodesToExplore; i_node++ )
+        {
+            //cout << "Node " << i_node << " ID "<< v_nodesToExplore[i_node]->getID() << " Added? " << v_nodesAdded[i_node] << endl;
+
+            // Check that the node has not been added to the tree yet
+            if ( !v_nodesAdded[i_node] )
+            {
+                size_t nodeID = v_nodesToExplore[i_node]->getID();
+
+                NEIGHBORS_IT neighbors = edgesF.equal_range(nodeID);
+
+                for ( multimap<size_t,CEdgePtr>::iterator itNeigbhor = neighbors.first;
+                      itNeigbhor != neighbors.second;
+                      itNeigbhor++ )
+                {
+
+                    CEdgePtr edgePtr = (*itNeigbhor).second;
+                    size_t neighborID;
+
+                    if ( !edgePtr->getNodePosition( nodeID ) )
+                        neighborID = edgePtr->getSecondNodeID();
+                    else
+                        neighborID = edgePtr->getFirstNodeID();
+
+                    //cout << "Current node ID: " << nodeID << " neighbor: " << neighborID << endl;
+
+                    if ( v_nodesAdded[nodesToExploreMap[neighborID]] )
+                    {
+                        v_nodesAdded[i_node] = true;
+                        nodeAdded = true;
+                    }
+                }
+
+            }
+        }
+    }
+
+    //SHOW_VECTOR("Nodes in tree: ", v_nodesAdded)
+
+    for ( size_t i_node = 0; i_node < v_nodesToExplore.size(); i_node++ )
+    {        
+        if ( v_nodesAdded[i_node] )
+            tree.push_back( v_nodesToExplore[i_node]->getID() );
+    }
+
+    //SHOW_VECTOR("Tree: ", tree)
+}
 
 
 // For-Fulkerson implemetation for max-flow min-cut computation adapted from:
@@ -376,7 +516,14 @@ void UPGMpp::getRandomAssignation(CGraph &graph,
                                   map<size_t,size_t> &assignation,
                                   TInferenceOptions &options )
 {
-    static boost::mt19937 rng;
+    static boost::mt19937 rng1;
+    static bool firstExecution = true;
+
+    if ( firstExecution )
+    {
+        rng1.seed(std::time(0));
+        firstExecution = false;
+    }
 
     vector<CNodePtr> &nodes = graph.getNodes();
 
@@ -387,7 +534,7 @@ void UPGMpp::getRandomAssignation(CGraph &graph,
         size_t N_classes = nodes[node]->getType()->getNumberOfClasses();
 
         boost::uniform_int<> generator(0,N_classes-1);
-        int state = generator(rng);
+        int state = generator(rng1);
 
         assignation[nodes[node]->getID()] = state;
     }

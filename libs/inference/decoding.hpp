@@ -94,6 +94,12 @@ namespace UPGMpp
         void decode(CGraph &graph, std::map<size_t, size_t> &results);
     };
 
+    class CDecodeTRPBP : public CMAPDecoder
+    {
+    public:
+        void decode(CGraph &graph, std::map<size_t, size_t> &results);
+    };
+
     class CDecodeGraphCuts : public CMAPDecoder
     {
     public:

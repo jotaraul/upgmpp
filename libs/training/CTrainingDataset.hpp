@@ -46,18 +46,24 @@ namespace UPGMpp
 
     struct TTrainingOptions
     {
-        bool    showTrainingProgress;
-        bool    showTrainedWeights;
-        bool    l2Regularization;
-        double  nodeLambda;
-        double  edgeLambda;
+        bool            showTrainingProgress;
+        bool            showTrainedWeights;
+        bool            l2Regularization;
+        double          nodeLambda;
+        double          edgeLambda;
+        std::string     trainingType;
+        std::string     inferenceMethod;
+        std::string     decodingMethod;
         std::vector<double>  lambda;
 
         TTrainingOptions(): showTrainingProgress(true),
                             showTrainedWeights(false),
                             l2Regularization(false),
                             nodeLambda(0),
-                            edgeLambda(0)
+                            edgeLambda(0),
+                            trainingType("pseudolikelihood"),
+                            inferenceMethod("LBP"),
+                            decodingMethod("AlphaExpansions")
         {}
     };
 
@@ -129,11 +135,24 @@ namespace UPGMpp
 
         void train();
 
-        void updateFunctionValueAndGradients( CGraph &graph,
-                                            std::map<size_t,size_t> &groundTruth,
-                                            double &fx,
-                                            const double *x,
-                                            double *g );
+        void updatePseudolikelihood( CGraph &graph,
+                                     std::map<size_t,size_t> &groundTruth,
+                                     double &fx,
+                                     const double *x,
+                                     double *g );
+
+        void updateInference( CGraph &graph,
+                              std::map<size_t,size_t> &groundTruth,
+                              double &fx,
+                              const double *x,
+                              double *g );
+
+        void updateDecoding( CGraph &graph,
+                        std::map<size_t,size_t> &groundTruth,
+                        double &fx,
+                        const double *x,
+                        double *g );
+
 
 
 

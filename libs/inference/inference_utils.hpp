@@ -31,7 +31,11 @@ namespace UPGMpp
     extern size_t messagesLBP( CGraph &graph,
                                TInferenceOptions &options,
                                std::vector<std::vector<Eigen::VectorXd> > &messages,
-                               bool maximize = true);
+                               bool maximize = true,
+                               const vector<size_t> &tree = vector<size_t>());
+
+    extern void getSpanningTree( CGraph &graph, std::vector<size_t> &tree);
+
 
     extern int fordFulkerson(MatrixXd &graph, int s, int t, VectorXi &cut);
 

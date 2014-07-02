@@ -57,6 +57,23 @@ inline void serialize(
 
 namespace UPGMpp
 {
+
+    #define SHOW_VECTOR(s,v)            \
+        std::cout<<s;                   \
+        for(size_t i=0;i<v.size();i++)  \
+        {                               \
+            cout<<v[i]<<" ";            \
+        }                               \
+        std::cout<<std::endl;
+
+    #define SHOW_VECTOR_NODES_ID(s,v)   \
+        std::cout<<s;                   \
+        for(size_t i=0;i<v.size();i++)  \
+        {                               \
+            cout<<v[i]->getID()<<" ";   \
+        }                               \
+        std::cout<<std::endl;
+
     template<typename T> Eigen::VectorXd vectorToEigenVector( T &array )
     {
         Eigen::VectorXd eigenVector;

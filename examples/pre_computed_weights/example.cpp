@@ -775,6 +775,7 @@ int main (int argc, char* argv[])
     CDecodeAlphaExpansion  decodeAlpha;
     CDecodeAlphaBetaSwap   decodeAlphaBeta;
     CDecodeMaxNodePot      decodeMax;
+    CDecodeTRPBP           decodeTRPBP;
 
     TInferenceOptions    options;
     options.maxIterations = 100;
@@ -842,6 +843,18 @@ int main (int argc, char* argv[])
 
     std::cout << "---------------------------------------------" << std::endl;
     std::cout << "           RESULTS MAX NODE POTENTIAL " << std::endl;
+    std::cout << "---------------------------------------------" << std::endl;
+
+    for ( it = results.begin(); it != results.end(); it++ )
+    {
+        std::cout << "[" << it->first << "] " << it->second << std::endl;
+    }
+
+    decodeTRPBP.setOptions( options );
+    decodeTRPBP.decode( myGraph, results);
+
+    std::cout << "---------------------------------------------" << std::endl;
+    std::cout << "               RESULTS TRPBP " << std::endl;
     std::cout << "---------------------------------------------" << std::endl;
 
     for ( it = results.begin(); it != results.end(); it++ )

@@ -357,6 +357,29 @@ int main (int argc, char* argv[])
 
     cout << "Log Z : " << logZ << endl;
 
+
+    std::cout << "-----------------------------------" << std::endl;
+    std::cout << "    TREE REPARAMETRIZATION BP " << std::endl;
+    std::cout << "-----------------------------------" << std::endl;
+
+    CTRPBPInference TRPBPInference;
+
+    TRPBPInference.infer( testGraph, nodeBeliefs, edgeBeliefs, logZ );
+
+    for ( itNodeBeliefs = nodeBeliefs.begin(); itNodeBeliefs != nodeBeliefs.end(); itNodeBeliefs++ )
+    {
+        std::cout << "Node id " << itNodeBeliefs->first << " beliefs (marginals): "
+                  << endl << itNodeBeliefs->second << std::endl << std::endl;
+    }
+
+    for ( itEdgeBeliefs = edgeBeliefs.begin(); itEdgeBeliefs != edgeBeliefs.end(); itEdgeBeliefs++ )
+    {
+        std::cout << "Edge id " << itEdgeBeliefs->first << " beliefs (marginals): "
+                  << endl << itEdgeBeliefs->second << std::endl << std::endl;
+    }
+
+    cout << "Log Z : " << logZ << endl;
+
     // We are ready to take a beer :)
 
     return 0;

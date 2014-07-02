@@ -436,6 +436,141 @@ void CDecodeLBP::decode( CGraph &graph,
 
 }
 
+
+/*------------------------------------------------------------------------------
+
+                                CDecodeTRPBP
+
+------------------------------------------------------------------------------*/
+
+void CDecodeTRPBP::decode( CGraph &graph,
+                         std::map<size_t,size_t> &results )
+{
+    results.clear();
+    const vector<CNodePtr> nodes = graph.getNodes();
+    const vector<CEdgePtr> edges = graph.getEdges();
+    multimap<size_t,CEdgePtr> edges_f = graph.getEdgesF();
+
+    size_t N_nodes = nodes.size();
+    size_t N_edges = edges.size();
+
+    //
+    // 1. Create spanning trees
+    //
+
+    bool allNodesAdded = false;
+    vector<vector<size_t > > v_trees;
+    vector<bool> v_addedNodes(N_nodes,false);
+    map<size_t,size_t> addedNodesMap;
+
+    for (size_t i = 0; i < N_nodes; i++)
+        addedNodesMap[ nodes[i]->getID() ] = i;
+
+    while (!allNodesAdded)
+    {
+        allNodesAdded = true;
+
+        vector<size_t> tree;
+        getSpanningTree( graph, tree );
+
+        // Check that the tree is not empty
+        if ( tree.size() )
+            v_trees.push_back( tree );
+
+        cout << "Tree: ";
+
+        for ( size_t i_node = 0; i_node < tree.size(); i_node++ )
+        {
+            v_addedNodes[ addedNodesMap[tree[i_node]] ] = true;
+            cout << tree[i_node] << " ";
+        }
+
+        cout << endl;
+
+        for ( size_t i_node = 0; i_node < N_nodes; i_node++ )
+            if ( !v_addedNodes[i_node] )
+            {
+                allNodesAdded = false;
+                break;
+            }
+
+    }
+
+    //
+    // 2. Compute messages passed in each tree until convergence
+    //
+
+    vector<vector<VectorXd> >   messages;
+    bool                        maximize = true;
+
+    double totalSumOfMsgs = std::numeric_limits<double>::max();
+
+    size_t iteration;
+
+    for ( iteration = 0; iteration < m_options.maxIterations; iteration++ )
+    {
+
+        for ( size_t i_tree=0; i_tree < v_trees.size(); i_tree++ )
+            messagesLBP( graph, m_options, messages, maximize, v_trees[i_tree] );
+
+        double newTotalSumOfMsgs = 0;
+        for ( size_t i = 0; i < N_edges; i++ )
+        {
+            newTotalSumOfMsgs += messages[i][0].sum() + messages[i][1].sum();
+        }
+
+        if ( std::abs( totalSumOfMsgs - newTotalSumOfMsgs ) <
+             m_options.convergency )
+            break;
+
+        totalSumOfMsgs = newTotalSumOfMsgs;
+
+    }
+
+    //
+    // Now that we have the messages, compute the final beliefs and fill the
+    // results map.
+    //
+
+    for ( size_t nodeIndex = 0; nodeIndex < N_nodes; nodeIndex++ )
+    {
+        const CNodePtr nodePtr = graph.getNode( nodeIndex );
+        size_t nodeID          = nodePtr->getID();
+        VectorXd nodePotPlusIncMsg = nodePtr->getPotentials( m_options.considerNodeFixedValues );
+
+        pair<multimap<size_t,CEdgePtr>::iterator,multimap<size_t,CEdgePtr>::iterator > neighbors;
+
+        neighbors = edges_f.equal_range(nodeID);
+
+        //
+        // Get the messages for all the neighbors, and multiply them with the node potential
+        //
+        for ( multimap<size_t,CEdgePtr>::iterator itNeigbhor = neighbors.first;
+              itNeigbhor != neighbors.second;
+              itNeigbhor++ )
+        {
+            CEdgePtr edgePtr( (*itNeigbhor).second );
+            size_t edgeIndex = graph.getEdgeIndex( edgePtr->getID() );
+
+            if ( !edgePtr->getNodePosition( nodeID ) ) // nodeID is the first node in the edge
+                nodePotPlusIncMsg = nodePotPlusIncMsg.cwiseProduct(messages[ edgeIndex ][ 1 ]);
+            else // nodeID is the second node in the dege
+                nodePotPlusIncMsg = nodePotPlusIncMsg.cwiseProduct(messages[ edgeIndex ][ 0 ]);
+        }
+
+        // Normalize
+        nodePotPlusIncMsg = nodePotPlusIncMsg / nodePotPlusIncMsg.sum();
+
+        // Now the class with the higher value is the boss!
+        size_t nodeMAP;
+
+        nodePotPlusIncMsg.maxCoeff(&nodeMAP);
+
+        results[nodeID] = nodeMAP;
+    }
+
+}
+
 /*------------------------------------------------------------------------------
 
                               CDecodeGraphCuts

@@ -490,7 +490,7 @@ namespace UPGMpp
          */
         double getUnnormalizedLogLikelihood( std::map<size_t,size_t> &classes )
         {
-            double unlikelihood = 1;
+            double unlikelihood = 0;
 
             //size_t N_nodes = m_nodes.size();
             size_t N_edges = m_edges.size();

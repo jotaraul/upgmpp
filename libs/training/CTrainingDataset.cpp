@@ -22,6 +22,8 @@
 
 #include "CTrainingDataset.hpp"
 #include <lbfgs.h>
+#include "inference.hpp"
+#include "decoding.hpp"
 
 #include <vector>
 
@@ -155,16 +157,31 @@ static lbfgsfloatval_t evaluate(
 
     // Compute the function value
 
+    TTrainingOptions &to = td->getTrainingOptions();
+
     for ( size_t dataset = 0; dataset < N_datasets; dataset++ )
     {        
         graphs[dataset].computePotentials();
-        td->updateFunctionValueAndGradients( graphs[dataset], groundTruth[dataset], fx, x, g );
-    }
 
-    TTrainingOptions &to = td->getTrainingOptions();
+        if ( to.trainingType == "pseudolikelihood" )
+            td->updatePseudolikelihood( graphs[dataset], groundTruth[dataset], fx, x, g );
+        else if ( to.trainingType == "inference" )
+            td->updateInference( graphs[dataset], groundTruth[dataset], fx, x, g );
+        else if ( to.trainingType == "decoding" )
+            td->updateDecoding( graphs[dataset], groundTruth[dataset], fx, x, g );
+    }    
 
+    //for ( size_t i=0; i < n; i++ )
+    //       cout << "g[" << i << "] : " << g[i] << endl;
+
+    //for ( size_t i=0; i < n; i++ )
+    //       cout << "x[" << i << "] : " << x[i] << endl;
+
+    //cout << "fx            : " << fx << endl;
     if ( to.l2Regularization )
         fx = fx + l2Regularization( x, g, n, td );
+
+    //cout << "fx regularized: " << fx << endl;
 
     return fx;
 }
@@ -385,7 +402,9 @@ void CTrainingDataSet::train()
     //param.orthantwise_c = 100;
     //param.orthantwise_start = 1;
     //param.orthantwise_end = N_weights - 1;
-    param.linesearch = LBFGS_LINESEARCH_BACKTRACKING;
+    //param.linesearch = LBFGS_LINESEARCH_BACKTRACKING;
+    param.linesearch = LBFGS_LINESEARCH_BACKTRACKING_STRONG_WOLFE;
+
     lbfgs_parameter_init(&param);
 
     //
@@ -453,7 +472,7 @@ void CTrainingDataSet::train()
 
 ------------------------------------------------------------------------------*/
 
-void CTrainingDataSet::updateFunctionValueAndGradients( CGraph &graph,
+void CTrainingDataSet::updatePseudolikelihood( CGraph &graph,
                                                         std::map<size_t,size_t> &groundTruth,
                                                         lbfgsfloatval_t &fx,
                                                         const lbfgsfloatval_t *x,
@@ -465,7 +484,7 @@ void CTrainingDataSet::updateFunctionValueAndGradients( CGraph &graph,
 
     vector<CNodePtr>::iterator itNodes;
 
-    // Computet the probability of each class of each node wile they neighbors
+    // Computet the probability of each class of each node while their neighbors
     // take a fixed value
     for ( itNodes = nodes.begin(); itNodes != nodes.end(); itNodes++ )
     {
@@ -619,6 +638,321 @@ void CTrainingDataSet::updateFunctionValueAndGradients( CGraph &graph,
             }
         }
     }
+
+    //cout << "Fx: " << fx << endl;
+    //cout << "[STATUS] Function value and gradients updated!" << endl;
+
+}
+
+/*------------------------------------------------------------------------------
+
+                            updateInference
+
+------------------------------------------------------------------------------*/
+
+void CTrainingDataSet::updateInference( CGraph &graph,
+                                        std::map<size_t,size_t> &groundTruth,
+                                        double &fx,
+                                        const double *x,
+                                        double *g )
+{
+
+    map<size_t,VectorXd> nodeBeliefs;
+    map<size_t,MatrixXd> edgeBeliefs;
+    double logZ;
+
+    if ( m_trainingOptions.inferenceMethod == "LBP" )
+    {
+        CLBPInference LBPinfer;
+        LBPinfer.infer( graph, nodeBeliefs, edgeBeliefs, logZ );
+    }
+    else
+    {
+        cout << "Unknown inference method specified for training." << endl;
+        return;
+    }
+
+        // Update objective funciton value!!!
+        fx = fx - graph.getUnnormalizedLogLikelihood(groundTruth) + logZ;
+
+        // Update gradient
+
+        //cout << "****************************************" << endl;
+        //cout << "Node bel      : " << nodeBel.transpose() << endl;
+
+        vector<CNodePtr> &v_nodes = graph.getNodes();
+        size_t           N_nodes  = v_nodes.size();
+
+        // Update nodes weights gradient
+        for ( size_t node = 0; node < N_nodes; node++ )
+        {
+            CNodePtr nodePtr = v_nodes[node];
+
+            const Eigen::VectorXd &features = nodePtr->getFeatures();
+            size_t ID = nodePtr->getID();
+            CNodeTypePtr nodeType = nodePtr->getType();
+            VectorXd nodeBel = nodeBeliefs[nodePtr->getID()] ;
+
+            size_t N_features = features.rows();
+            size_t N_classes = nodeType->getNumberOfClasses();
+
+            for ( size_t class_i = 0; class_i < N_classes; class_i++ )
+            for ( size_t feature = 0; feature < N_features; feature++ )
+            {
+                size_t index = m_nodeWeightsMap[nodeType](class_i,feature);
+                //cout << "Class" << class_i << " Feature: " << feature << endl;
+
+                if ( index > 0 ) // is the weight set to 0?
+                {
+                    double ok = 0;
+
+                    if ( class_i == groundTruth[ID] )
+                        ok = 1;
+
+
+
+                    //cout << "----------------------------------------------" << endl;
+                    //cout << "Previous g[" << index << "]" << g[index] << endl;
+
+                    g[index] = g[index] + features(feature)*(nodeBel(class_i) - ok);
+
+                    //cout << "Gradient at g[" << index << "]: " << g[index] << endl;
+
+                    //cout << "Feature va lue: " << features(feature) << endl;
+                    //cout << "Node bel     : " << nodeBel(feature) << endl;
+                    //cout << "Ok           : " << ok << endl;
+                }
+            }
+        }
+
+        // Update the edge gradients
+
+        vector<CEdgePtr> &v_edges = graph.getEdges();
+        size_t N_edges = v_edges.size();
+
+        for ( size_t edge_i = 0; edge_i < N_edges; edge_i++ )
+        {
+            CEdgePtr edgePtr = v_edges[edge_i];
+            CEdgeTypePtr edgeTypePtr = edgePtr->getType();
+            size_t N_features = edgeTypePtr->getNumberOfFeatures();
+            size_t edgeID = edgePtr->getID();
+
+            MatrixXd edgeBel = edgeBeliefs[edgeID];
+
+            CNodePtr node1Ptr, node2Ptr;
+            edgePtr->getNodes( node1Ptr, node2Ptr );
+
+            size_t N_classes1 = node1Ptr->getType()->getNumberOfClasses();
+            size_t N_classes2 = node2Ptr->getType()->getNumberOfClasses();
+
+            size_t ID1 = node1Ptr->getID();
+            size_t ID2 = node2Ptr->getID();
+
+            for ( size_t state1 = 0; state1 < N_classes1; state1++ )
+            for (size_t state2 = 0; state2 < N_classes2; state2++ )
+            for ( size_t feature = 0; feature < N_features; feature++ )
+            {
+                size_t index;
+                index = m_edgeWeightsMap[edgeTypePtr][feature](state1,state2);
+
+                double ok = 0;
+
+                if ( ( state1 == groundTruth[ID1]) && ( state2 == groundTruth[ID2] ) )
+                    ok = 1;
+
+                g[index] = g[index] +
+                              edgePtr->getFeatures()[feature] *
+                             ( edgeBel(state1,state2) - ok );
+            }
+
+        }
+
+
+    //cout << "Fx: " << fx << endl;
+    //cout << "[STATUS] Function value and gradients updated!" << endl;
+
+}
+
+
+/*------------------------------------------------------------------------------
+
+                            updateInference
+
+------------------------------------------------------------------------------*/
+
+void CTrainingDataSet::updateDecoding( CGraph &graph,
+                                        std::map<size_t,size_t> &groundTruth,
+                                        double &fx,
+                                        const double *x,
+                                        double *g )
+{
+
+    map<size_t,size_t> MAPResults;
+
+    if ( m_trainingOptions.decodingMethod == "AlphaExpansions" )
+    {
+        CDecodeAlphaExpansion decodeAlphaExpansion;
+        decodeAlphaExpansion.decode(graph,MAPResults);
+
+        /*std::map<size_t,size_t>::iterator it;
+
+        for ( it = MAPResults.begin(); it != MAPResults.end(); it++ )
+        {
+            std::cout << " " << it->second;
+        }
+        cout << std::endl;*/
+    }
+    else
+    {
+        cout << "Unknown decoding method specified for training." << endl;
+        return;
+    }
+
+    vector<CNodePtr> &v_nodes = graph.getNodes();
+    size_t N_nodes = v_nodes.size();
+    vector<CEdgePtr> &v_edges = graph.getEdges();
+    size_t N_edges = v_edges.size();
+
+    map<size_t,VectorXd> nodeBeliefs;
+    map<size_t,MatrixXd> edgeBeliefs;
+    double logZ;
+
+    for ( size_t i_node = 0; i_node < N_nodes; i_node++ )
+    {
+        CNodePtr nodePtr = v_nodes[i_node];
+        size_t ID = nodePtr->getID();
+        size_t N_classes = nodePtr->getType()->getNumberOfClasses();
+
+        VectorXd nodeBel(N_classes);
+        nodeBel.setZero();
+        //nodeBel.setConstant(0.05);
+        nodeBel( MAPResults[ID] ) = 0.5;
+
+        nodeBeliefs[ID] = nodeBel;
+
+        //cout << "Node beliefs " << ID << endl << nodeBeliefs[ID] << endl;
+    }
+
+    for ( size_t i_edge=0; i_edge < N_edges; i_edge++)
+    {
+        CEdgePtr edgePtr = v_edges[i_edge];
+        size_t edgeID = edgePtr->getID();
+
+        CNodePtr node1Ptr, node2Ptr;
+        edgePtr->getNodes( node1Ptr, node2Ptr );
+
+        size_t N_classes1 = node1Ptr->getType()->getNumberOfClasses();
+        size_t N_classes2 = node2Ptr->getType()->getNumberOfClasses();
+
+        size_t ID1 = node1Ptr->getID();
+        size_t ID2 = node2Ptr->getID();
+
+        MatrixXd edgeBel(N_classes1, N_classes2);
+        edgeBel.setZero();
+        //edgeBel.setConstant(0.05);
+        edgeBel( MAPResults[ID1], MAPResults[ID2] ) = 0.5;
+
+        edgeBeliefs[edgeID] = edgeBel;
+
+        //cout << "Edge beliefs " << edgeID << endl << edgeBeliefs[edgeID] << endl;
+    }
+
+    //cout << "JARRRRR" << endl;
+
+    logZ = graph.getUnnormalizedLogLikelihood( MAPResults );
+
+    //cout << "logZ:       " << logZ << endl;
+    //cout << "Likelihood: " << graph.getUnnormalizedLogLikelihood(groundTruth) << endl;
+
+    // Update objective funciton value!!!
+    fx = fx - graph.getUnnormalizedLogLikelihood(groundTruth) + logZ;
+
+    // Update gradient
+
+    // Update nodes weights gradient
+    for ( size_t node = 0; node < N_nodes; node++ )
+    {
+        CNodePtr nodePtr = v_nodes[node];
+
+        const Eigen::VectorXd &features = nodePtr->getFeatures();
+        size_t ID = nodePtr->getID();
+        CNodeTypePtr nodeType = nodePtr->getType();
+        VectorXd nodeBel = nodeBeliefs[nodePtr->getID()] ;
+
+        size_t N_features = features.rows();
+        size_t N_classes = nodeType->getNumberOfClasses();
+
+        for ( size_t class_i = 0; class_i < N_classes; class_i++ )
+            for ( size_t feature = 0; feature < N_features; feature++ )
+            {
+                size_t index = m_nodeWeightsMap[nodeType](class_i,feature);
+                //cout << "Class" << class_i << " Feature: " << feature << endl;
+
+                if ( index > 0 ) // is the weight set to 0?
+                {
+                    double ok = 0;
+
+                    if ( class_i == groundTruth[ID] )
+                        ok = 1;
+
+
+
+                    //cout << "----------------------------------------------" << endl;
+                    //cout << "Previous g[" << index << "]" << g[index] << endl;
+
+                    g[index] = g[index] + features(feature)*(nodeBel(class_i) - ok);
+
+                    //cout << "Gradient at g[" << index << "]: " << g[index] << endl;
+
+                    //cout << "Feature value: " << features(feature) << endl;
+                    //cout << "Node bel     : " << nodeBel(feature) << endl;
+                    //cout << "Ok           : " << ok << endl;
+
+
+                }
+            }
+    }
+
+    // Update the edge gradients
+
+    for ( size_t edge_i = 0; edge_i < N_edges; edge_i++ )
+    {
+        CEdgePtr edgePtr = v_edges[edge_i];
+        CEdgeTypePtr edgeTypePtr = edgePtr->getType();
+        size_t N_features = edgeTypePtr->getNumberOfFeatures();
+        size_t edgeID = edgePtr->getID();
+
+        MatrixXd edgeBel = edgeBeliefs[edgeID];
+
+        CNodePtr node1Ptr, node2Ptr;
+        edgePtr->getNodes( node1Ptr, node2Ptr );
+
+        size_t N_classes1 = node1Ptr->getType()->getNumberOfClasses();
+        size_t N_classes2 = node2Ptr->getType()->getNumberOfClasses();
+
+        size_t ID1 = node1Ptr->getID();
+        size_t ID2 = node2Ptr->getID();
+
+        for ( size_t state1 = 0; state1 < N_classes1; state1++ )
+            for (size_t state2 = 0; state2 < N_classes2; state2++ )
+                for ( size_t feature = 0; feature < N_features; feature++ )
+                {
+                    size_t index;
+                    index = m_edgeWeightsMap[edgeTypePtr][feature](state1,state2);
+
+                    double ok = 0;
+
+                    if ( ( state1 == groundTruth[ID1]) && ( state2 == groundTruth[ID2] ) )
+                        ok = 1;
+
+                    g[index] = g[index] +
+                            edgePtr->getFeatures()[feature] *
+                            ( edgeBel(state1,state2) - ok );
+                }
+
+    }
+
+
 
     //cout << "Fx: " << fx << endl;
     //cout << "[STATUS] Function value and gradients updated!" << endl;

@@ -56,7 +56,7 @@ include_directories(${Boost_INCLUDE_DIRS})
 #------------------------------------------------------------------------------#
 
 # Create UPGM++ libraries and add include directories to the examples
-SET( UPGM++_LIBRARIES "base;training;inference" )
+SET( UPGM++_LIBRARIES "base;inference;training" )
 
 SET(INC_DIR "")
 SET(LIBRARIES "")
