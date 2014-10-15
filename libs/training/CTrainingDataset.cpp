@@ -227,7 +227,7 @@ static int progress(
 
 ------------------------------------------------------------------------------*/
 
-void CTrainingDataSet::train()
+int CTrainingDataSet::train( const bool debug )
 {
     // Steps of the train algorithm:
     //  1. Build the mapping between the different types of nodes and edges and
@@ -243,6 +243,8 @@ void CTrainingDataSet::train()
     //
 
     // Nodes
+
+    DEBUG("Preparing weights of the different node types...",1);
 
     N_weights = 0;
     for ( size_t i = 0; i < m_nodeTypes.size(); i++ )
@@ -271,6 +273,8 @@ void CTrainingDataSet::train()
     }
 
     // Edges
+
+    DEBUG("Preparing weights of the different edge types...",1);
 
     for ( size_t i = 0; i < m_edgeTypes.size(); i++ )
     {
@@ -358,7 +362,8 @@ void CTrainingDataSet::train()
         //cout << *m_edgeTypes[i] << endl;
     }
 
-    //cout << "Number of weights" << N_weights << endl;
+    //cout << "Number of weights " << N_weights << endl;
+    DEBUGD("Number of weights",N_weights,2);
 
     //
     //  2. Initialize the weights.
@@ -376,6 +381,8 @@ void CTrainingDataSet::train()
 
     lbfgsfloatval_t fx;
     lbfgs_parameter_t param;
+
+    lbfgs_parameter_init(&param);
 
     if ( m_trainingOptions.l2Regularization )
     {
@@ -396,20 +403,43 @@ void CTrainingDataSet::train()
 
     if (x == NULL) {
         cout << "ERROR: Failed to allocate a memory block for variables." << endl;
-    }
+    }    
+
+    DEBUG("Initializing parameters...",1);
 
     /* Initialize the parameters for the L-BFGS optimization. */
     //param.orthantwise_c = 100;
     //param.orthantwise_start = 1;
     //param.orthantwise_end = N_weights - 1;
-    //param.linesearch = LBFGS_LINESEARCH_BACKTRACKING;
-    param.linesearch = LBFGS_LINESEARCH_BACKTRACKING_STRONG_WOLFE;
 
-    lbfgs_parameter_init(&param);
+    int &lsm = m_trainingOptions.linearSearchMethod;
+    if ( !lsm )
+        param.linesearch = LBFGS_LINESEARCH_DEFAULT;
+    else if ( lsm == 1 )
+        param.linesearch = LBFGS_LINESEARCH_MORETHUENTE;
+    else if ( lsm == 2 )
+        param.linesearch = LBFGS_LINESEARCH_BACKTRACKING_ARMIJO;
+    else if ( lsm == 3 )
+        param.linesearch = LBFGS_LINESEARCH_BACKTRACKING;
+    else if ( lsm == 4 )
+        param.linesearch = LBFGS_LINESEARCH_BACKTRACKING_WOLFE;
+    else if ( lsm == 5 )
+        param.linesearch = LBFGS_LINESEARCH_BACKTRACKING_STRONG_WOLFE;
+
+    param.max_iterations = m_trainingOptions.maxIterations;
+
+    param.xtol = 10*exp(-31);
+    param.ftol = 10*exp(-31);
+    param.gtol = 10*exp(-31);
+    param.max_step = 10*exp(31);
+
+
 
     //
     //  4. Launch optimization (training).
     //
+
+    DEBUG("Optimizing...",1);
 
     /*
         Start the L-BFGS optimization; this will invoke the callback functions
@@ -463,6 +493,8 @@ void CTrainingDataSet::train()
     }
 
     lbfgs_free(x);
+
+    return ret;
 }
 
 
@@ -478,8 +510,7 @@ void CTrainingDataSet::updatePseudolikelihood( CGraph &graph,
                                                         const lbfgsfloatval_t *x,
                                                         lbfgsfloatval_t *g )
 {
-
-    //cout << "[STATUS] Updating function value and grandients!" << endl ;
+     //cout << "[STATUS] Updating function value and grandients! Graph: " << graph.getID() << endl ;
     vector<CNodePtr> &nodes = graph.getNodes();
 
     vector<CNodePtr>::iterator itNodes;
@@ -493,7 +524,7 @@ void CTrainingDataSet::updatePseudolikelihood( CGraph &graph,
         // Get direct access to some interesting members of the node
         CNodeTypePtr    nodeType    = node->getType();
         Eigen::VectorXd potentials  = node->getPotentials();
-        const Eigen::VectorXd &features = node->getFeatures();
+        const Eigen::VectorXd &features = node->getFeatures();        
 
         size_t ID = node->getID();
 
@@ -560,7 +591,12 @@ void CTrainingDataSet::updatePseudolikelihood( CGraph &graph,
                     double ok = 0;
 
                     if ( class_i == groundTruth[ID] )
-                        ok = 1;
+                    {
+                        if ( m_trainingOptions.classRelevance && m_classesRelevance[nodeType].count() )
+                            ok = 1*m_classesRelevance[nodeType](class_i);
+                        else
+                            ok = 1;
+                    }
 
 
 

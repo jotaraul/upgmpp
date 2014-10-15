@@ -99,7 +99,7 @@ SET( BUILD_EXAMPLES ON CACHE BOOL "Build examples?")
 IF(BUILD_EXAMPLES)
 	
 	# Create examples
-	SET( UPGM++_EXAMPLES "different_node_types;MAP_and_marginal_inference;pre_computed_weights;saving_and_loading_graphs;synthetic_data;training_example" )
+	SET( UPGM++_EXAMPLES "different_node_types;MAP_and_marginal_inference;pre_computed_weights;saving_and_loading_graphs;synthetic_data;training_example;local_tests" )
 	
 	FOREACH( EXAMPLE ${UPGM++_EXAMPLES} )
 		# Define the executable target:
@@ -113,27 +113,6 @@ ENDIF(BUILD_EXAMPLES)
 configure_file(${PROJECT_NAME}Config.cmake.in
   "${PROJECT_BINARY_DIR}/${PROJECT_NAME}Config.cmake" @ONLY)
 
-
-#------------------------------------------------------------------------------#
-#                                 TESTS
-#------------------------------------------------------------------------------#
-
-SET( BUILD_TESTS OFF CACHE BOOL "Build tests?")
-
-IF(BUILD_TESTS)
-
-	# Create tests
-	SET( UPGM++_TESTS "graph_cuts" )
-	
-	FOREACH( TEST ${UPGM++_TESTS} )
-		# Define the executable target:
-		ADD_EXECUTABLE(${TEST} ${CMAKE_SOURCE_DIR}/tests/${TEST}/test.cpp)
-		# Link the executable
-	        TARGET_LINK_LIBRARIES(${TEST} base training inference ${Boost_LIBRARIES})
-	ENDFOREACH( TEST ${UPGM++_TESTS} )
-
-
-ENDIF(BUILD_TESTS)
 
 
 #------------------------------------------------------------------------------#

@@ -46,6 +46,8 @@ namespace UPGMpp
     void getRandomAssignation(CGraph &graph,
                               std::map<size_t,size_t> &assignation,
                               TInferenceOptions &options);
+
+    void applyMaskToPotentials(CGraph &graph, map<size_t,vector<size_t> > &mask );
 }
 
 #endif

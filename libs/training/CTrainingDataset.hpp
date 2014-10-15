@@ -37,7 +37,6 @@
 namespace UPGMpp
 {
 
-
 /*----------------------------------------------------------------------------
  *
  *                            CTrainingDataSet
@@ -51,6 +50,9 @@ namespace UPGMpp
         bool            l2Regularization;
         double          nodeLambda;
         double          edgeLambda;
+        int             linearSearchMethod;
+        int             maxIterations;
+        bool            classRelevance;
         std::string     trainingType;
         std::string     inferenceMethod;
         std::string     decodingMethod;
@@ -61,6 +63,9 @@ namespace UPGMpp
                             l2Regularization(false),
                             nodeLambda(0),
                             edgeLambda(0),
+                            linearSearchMethod(0),
+                            maxIterations(2000),
+                            classRelevance(false),
                             trainingType("pseudolikelihood"),
                             inferenceMethod("LBP"),
                             decodingMethod("AlphaExpansions")
@@ -75,6 +80,7 @@ namespace UPGMpp
         std::vector<CNodeTypePtr>               m_nodeTypes;
         std::vector<CEdgeTypePtr>               m_edgeTypes;
         std::map<CEdgeTypePtr,Eigen::VectorXi>  m_typesOfEdgeFeatures;
+        std::map<CNodeTypePtr,Eigen::VectorXd>  m_classesRelevance;
         size_t                                  N_weights;
         std::map<CNodeTypePtr, Eigen::MatrixXi> m_nodeWeightsMap;
         std::map<CEdgeTypePtr,std::vector<Eigen::MatrixXi> > m_edgeWeightsMap;
@@ -132,8 +138,13 @@ namespace UPGMpp
             m_typesOfEdgeFeatures[ edgeType ] = vectorToIntEigenVector( typeOfEdgeFeatures );
         }
 
+        void addClassesRelevance( CNodeTypePtr nodeType, Eigen::VectorXd &classesRelevance )
+        {
+            m_classesRelevance[nodeType] = classesRelevance;
+        }
 
-        void train();
+
+        int train( const bool debug = false);
 
         void updatePseudolikelihood( CGraph &graph,
                                      std::map<size_t,size_t> &groundTruth,

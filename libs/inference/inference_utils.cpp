@@ -17,7 +17,7 @@ using namespace Eigen;
 size_t UPGMpp::messagesLBP(CGraph &graph,
                             TInferenceOptions &options,
                             vector<vector<VectorXd> > &messages ,
-                            bool maximize,
+                            bool maximize,                            
                             const vector<size_t> &tree)
 {
 
@@ -30,7 +30,7 @@ size_t UPGMpp::messagesLBP(CGraph &graph,
 
     bool is_tree = (tree.size()>0) ? true : false;
 
-    graph.computePotentials();
+    //graph.computePotentials();
 
     //
     // Build the messages structure
@@ -63,6 +63,17 @@ size_t UPGMpp::messagesLBP(CGraph &graph,
 
     }
 
+    vector<vector<VectorXd> > previousMessages;
+
+    if ( options.particularS["order"] == "RBP" )
+    {
+        previousMessages = messages;
+        for ( size_t i = 0; i < previousMessages.size(); i++ )
+        {
+            previousMessages[i][0].fill(0);
+            previousMessages[i][1].fill(0);
+        }
+    }
 
     //
     // Iterate until convergence or a certain maximum number of iterations is reached
@@ -72,6 +83,12 @@ size_t UPGMpp::messagesLBP(CGraph &graph,
 
     for ( iteration = 0; iteration < options.maxIterations; iteration++ )
     {
+        // Variables used by Residual Belief Propagation
+        size_t edgeWithMaxDiffIndex;
+        VectorXd associatedMessage;
+        bool from1to2;
+        double maxDifference = -1;
+
         //
         // Iterate over all the nodes
         //
@@ -83,12 +100,9 @@ size_t UPGMpp::messagesLBP(CGraph &graph,
             // Check if we are calibrating a tree, and so if the node is not member of the tree,
             // so we dont have to update its messages
             if ( is_tree && ( std::find(tree.begin(), tree.end(), nodeID ) == tree.end() ) )
-            {
                 continue;
-                cout << "LEAVING" << endl;
-            }
 
-            pair<multimap<size_t,CEdgePtr>::iterator,multimap<size_t,CEdgePtr>::iterator > neighbors;
+            NEIGHBORS_IT neighbors;
 
             neighbors = edges_f.equal_range(nodeID);
 
@@ -108,11 +122,8 @@ size_t UPGMpp::messagesLBP(CGraph &graph,
 
                 // Check if we are calibrating a tree, and so if the neighbor node
                 // is not member of the tree, so we dont have to update its messages
-                if ( is_tree && ( std::find(tree.begin(), tree.end(), neighborID ) != tree.end() ))
-                {
+                if ( is_tree && ( std::find(tree.begin(), tree.end(), neighborID ) == tree.end() ))
                     continue;
-                    cout << "LEAVING" << endl;
-                }
 
                 //
                 // Compute the message from current node as a product of all the
@@ -132,9 +143,11 @@ size_t UPGMpp::messagesLBP(CGraph &graph,
                     if ( ( neighborID != ID11 ) && ( neighborID != ID12 ) )
                     {
                         if ( nodeID == ID11 )
-                            nodePotPlusIncMsg = nodePotPlusIncMsg.cwiseProduct(messages[ edgeIndex ][ 1 ]);
+                            nodePotPlusIncMsg =
+                                    nodePotPlusIncMsg.cwiseProduct(messages[ edgeIndex ][ 1 ]);
                         else // nodeID == ID2
-                            nodePotPlusIncMsg = nodePotPlusIncMsg.cwiseProduct(messages[ edgeIndex ][ 0 ]);
+                            nodePotPlusIncMsg =
+                                    nodePotPlusIncMsg.cwiseProduct(messages[ edgeIndex ][ 0 ]);
                     }
                 }
 
@@ -196,21 +209,63 @@ size_t UPGMpp::messagesLBP(CGraph &graph,
                 double smoothing = options.particularD["smoothing"];
 
                 if ( smoothing != 0 )
-                   if ( nodeID == ID1 )
-                       smoothedOldMessage = (1-smoothing) * messages[ edgeIndex ][0];
-                   else
-                       smoothedOldMessage = (1-smoothing) * messages[ edgeIndex ][1];
+                    if ( nodeID == ID1 )
+                        newMessage = newMessage + (1-smoothing) * messages[ edgeIndex ][0];
+                    else
+                        newMessage = newMessage + (1-smoothing) * messages[ edgeIndex ][1];
 
                 //cout << "New message:" << endl << newMessage << endl << "Smoothed" << endl << smoothedOldMessage << endl;
 
-                if ( nodeID == ID1 )
-                    messages[ edgeIndex ][0] = newMessage + smoothedOldMessage;
-                else
-                    messages[ edgeIndex ][1] = newMessage + smoothedOldMessage;
+                // If residual belief propagation is activated, just check if the
+                // newMessage is the one with the higest residual till the
+                // moment. Otherwise, set the new message as the current one
+                if ( options.particularS["order"] == "RBP" )
+                {
+                    if ( nodeID == ID1 )
+                    {
+                        VectorXd differences = messages[edgeIndex][0] - newMessage;
+                        double difference = differences.cwiseAbs().sum();
 
+                        if ( difference > maxDifference )
+                        {
+                            from1to2 = true;
+                            edgeWithMaxDiffIndex = edgeIndex;
+                            maxDifference = difference;
+                            associatedMessage = newMessage;
+                        }
+                    }
+                    else
+                    {
+                        VectorXd differences = messages[edgeIndex][1] - newMessage;
+                        double difference = differences.cwiseAbs().sum();
+
+                        if ( difference > maxDifference )
+                        {
+                            from1to2 = false;
+                            edgeWithMaxDiffIndex = edgeIndex;
+                            maxDifference = difference;
+                            associatedMessage = newMessage;
+                        }
+                    }
+                }
+                else
+                {
+                    if ( nodeID == ID1 )
+                        messages[ edgeIndex ][0] = newMessage;
+                    else
+                        messages[ edgeIndex ][1] = newMessage;
+                }
             }
 
         } // Nodes
+
+        if ( options.particularS["order"] == "RBP" )
+        {
+            if ( from1to2 )
+                messages[ edgeWithMaxDiffIndex ][0] = associatedMessage;
+            else
+                messages[ edgeWithMaxDiffIndex ][1] = associatedMessage;
+        }
 
         //
         // Check convergency!!
@@ -229,6 +284,14 @@ size_t UPGMpp::messagesLBP(CGraph &graph,
             break;
 
         totalSumOfMsgs = newTotalSumOfMsgs;
+
+        // Show messages
+        /*cout << "Iteration:" << iteration << endl;
+
+        for ( size_t i = 0; i < messages.size(); i++ )
+        {
+            cout <<  messages[i][0] << " " << messages[i][1] << endl;
+        }*/
 
     } // Iterations
 
@@ -542,4 +605,29 @@ void UPGMpp::getRandomAssignation(CGraph &graph,
     /*map<size_t,size_t>::iterator it;
     for ( it = assignation.begin(); it != assignation.end(); it++ )
         cout << "[" << it->first << "] " << it->second << endl;*/
+}
+
+void UPGMpp::applyMaskToPotentials(CGraph &graph, map<size_t,vector<size_t> > &mask )
+{
+    vector<CNodePtr> &nodes = graph.getNodes();
+
+    for ( size_t node_index = 0; node_index < nodes.size(); node_index++ )
+    {
+        CNodePtr nodePtr    = nodes[node_index];
+        size_t nodeID       = nodePtr->getID();
+
+        if ( mask.count(nodeID) )
+        {
+            Eigen::VectorXd nodePot = nodePtr->getPotentials();
+            Eigen::VectorXd potMask( nodePot.rows() );
+            potMask.fill(0);
+
+            for ( size_t mask_index = 0; mask_index < mask[nodeID].size(); mask_index++ )
+                potMask(mask[nodeID][mask_index]) = 1;
+
+            nodePot = nodePot.cwiseProduct(potMask);
+
+            nodePtr->setPotentials( nodePot );
+        }
+    }
 }

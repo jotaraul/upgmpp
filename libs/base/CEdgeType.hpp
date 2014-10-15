@@ -124,7 +124,10 @@ namespace UPGMpp
             m_weights.resize( N_features );
 
             for ( size_t i = 0; i < N_features; i++ )
+            {
                 m_weights[i].resize( N_classes_1, N_classes_2 );
+                m_weights[i].fill( 0 );
+            }
         }
 
         /** Additional constructor
@@ -169,7 +172,10 @@ namespace UPGMpp
             m_weights.resize( m_nFeatures );
 
             for ( size_t i = 0; i < m_nFeatures; i++ )
+            {
                 m_weights[i].resize( N_classes_1, N_classes_2 );
+                m_weights[i].fill(0);
+            }
         }
         /**	Function for retrieving the ID of the edge type.
           * \return A copy of the ID of the edge type.

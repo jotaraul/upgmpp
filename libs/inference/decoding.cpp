@@ -35,7 +35,7 @@ using namespace Eigen;
 
 ------------------------------------------------------------------------------*/
 
-void CDecodeMaxNodePot::decode( CGraph &graph, std::map<size_t,size_t> &results )
+void CDecodeMaxNodePot::decode( CGraph &graph, std::map<size_t,size_t> &results, bool debug )
 {
     // Direct access to useful vbles
     const std::vector<CNodePtr> &nodes = graph.getNodes();
@@ -64,7 +64,7 @@ void CDecodeMaxNodePot::decode( CGraph &graph, std::map<size_t,size_t> &results 
 
 ------------------------------------------------------------------------------*/
 
-void CDecodeICM::decode( CGraph &graph, std::map<size_t,size_t> &results )
+void CDecodeICM::decode( CGraph &graph, std::map<size_t,size_t> &results, bool debug )
 {
     //cout << "Satarting ICM decoding..." << endl;
 
@@ -75,6 +75,13 @@ void CDecodeICM::decode( CGraph &graph, std::map<size_t,size_t> &results )
 
     // Initialize the results vector
     results.clear();
+
+    // Apply mask, if any
+    if ( !m_mask.empty() )
+    {
+        DEBUG("Applying mask to potentials...",1);
+        applyMaskToPotentials(graph,m_mask);
+    }
 
     // Initial class assignation
 
@@ -138,7 +145,7 @@ void CDecodeICM::decode( CGraph &graph, std::map<size_t,size_t> &results )
                                  );
                 }
 
-                //cout << "Testing edge <" << ID << "," << neighborID << ">" << endl;
+                //cout << "Testing edge <" << ID1 << "," << ID2 << ">" << endl;
 
 
                 //cout << "Edge potentials" << edgePotentials.col(results[neighborID]) << endl;
@@ -179,7 +186,7 @@ void CDecodeICM::decode( CGraph &graph, std::map<size_t,size_t> &results )
 ------------------------------------------------------------------------------*/
 
 void CDecodeICMGreedy::decode( CGraph &graph,
-                                std::map<size_t,size_t> &results )
+                                std::map<size_t,size_t> &results, bool debug )
 {
 
     // Direct access to useful vbles
@@ -301,7 +308,7 @@ void decodeExactRec( CGraph &graph,
                 std::map<size_t,size_t> &results,
                 double &maxLikelihood);
 
-void CDecodeExact::decode(CGraph &graph, std::map<size_t,size_t> &results )
+void CDecodeExact::decode(CGraph &graph, std::map<size_t,size_t> &results, bool debug )
 {
 
     results.clear();
@@ -376,7 +383,7 @@ void decodeExactRec( CGraph &graph,
 ------------------------------------------------------------------------------*/
 
 void CDecodeLBP::decode( CGraph &graph,
-                         std::map<size_t,size_t> &results )
+                         std::map<size_t,size_t> &results, bool debug )
 {
     results.clear();
     const vector<CNodePtr> nodes = graph.getNodes();
@@ -439,12 +446,31 @@ void CDecodeLBP::decode( CGraph &graph,
 
 /*------------------------------------------------------------------------------
 
+                                CDecodeRBP
+
+------------------------------------------------------------------------------*/
+
+void CDecodeRBP::decode( CGraph &graph,
+                         std::map<size_t,size_t> &results, bool debug )
+{
+    CDecodeLBP decodeLBP;
+
+    m_options.particularS["order"] = "RBP";
+
+    decodeLBP.setOptions( m_options );
+    decodeLBP.decode( graph, results );
+
+}
+
+
+/*------------------------------------------------------------------------------
+
                                 CDecodeTRPBP
 
 ------------------------------------------------------------------------------*/
 
 void CDecodeTRPBP::decode( CGraph &graph,
-                         std::map<size_t,size_t> &results )
+                         std::map<size_t,size_t> &results, bool debug )
 {
     results.clear();
     const vector<CNodePtr> nodes = graph.getNodes();
@@ -477,15 +503,15 @@ void CDecodeTRPBP::decode( CGraph &graph,
         if ( tree.size() )
             v_trees.push_back( tree );
 
-        cout << "Tree: ";
+        //cout << "Tree: ";
 
         for ( size_t i_node = 0; i_node < tree.size(); i_node++ )
         {
             v_addedNodes[ addedNodesMap[tree[i_node]] ] = true;
-            cout << tree[i_node] << " ";
+            //cout << tree[i_node] << " ";
         }
 
-        cout << endl;
+        //cout << endl;
 
         for ( size_t i_node = 0; i_node < N_nodes; i_node++ )
             if ( !v_addedNodes[i_node] )
@@ -578,7 +604,7 @@ void CDecodeTRPBP::decode( CGraph &graph,
 ------------------------------------------------------------------------------*/
 
 void CDecodeGraphCuts::decode( CGraph &graph,
-                         std::map<size_t,size_t> &results )
+                         std::map<size_t,size_t> &results, bool debug )
 {
     //cout << "Decoding graph cuts..." << endl;
 
@@ -824,7 +850,7 @@ void CDecodeGraphCuts::decode( CGraph &graph,
 ------------------------------------------------------------------------------*/
 
 void CDecodeAlphaExpansion::decode( CGraph &graph,
-                                    std::map<size_t,size_t> &results )
+                                    std::map<size_t,size_t> &results, bool debug )
 {
 
     //
@@ -848,6 +874,8 @@ void CDecodeAlphaExpansion::decode( CGraph &graph,
 
     // Initialize the results vector
     results.clear();
+
+    DEBUG("Decoding Alpha expansion",1);
 
     // Direct access to useful vbles
 
@@ -884,6 +912,8 @@ void CDecodeAlphaExpansion::decode( CGraph &graph,
 
     while ( !convergence && ( iteration < m_options.maxIterations ) )
     {
+        DEBUGD("Doing iteration... ",iteration,2);
+
         // Store the previous assignation for convergence checking
         assignation_old = assignation;
 
@@ -1079,6 +1109,8 @@ void CDecodeAlphaExpansion::decode( CGraph &graph,
             }
         }
 
+        DEBUG("Checking convergence...",2);
+
         //
         // 2.2 Check termination (convergence) conditions
         //
@@ -1115,7 +1147,7 @@ void CDecodeAlphaExpansion::decode( CGraph &graph,
 ------------------------------------------------------------------------------*/
 
 void CDecodeAlphaBetaSwap::decode( CGraph &graph,
-                                    std::map<size_t,size_t> &results )
+                                    std::map<size_t,size_t> &results, bool debug )
 
 {
     //
@@ -1388,7 +1420,7 @@ void updateResults(map<size_t,size_t> &results,
 }
 
 void CDecodeWithRestarts::decode( CGraph &graph,
-                                  std::map<size_t,size_t> &results )
+                                  std::map<size_t,size_t> &results, bool debug )
 {
     map<size_t,vector<size_t> > partialResults;
 

@@ -93,6 +93,7 @@ namespace UPGMpp
             m_nClasses  = N_classes;
             m_nFeatures = N_features;
             m_weights.resize( N_classes, N_features );
+            m_weights.fill( 0 );
             m_label     = label;
 
             m_classNames.resize( N_classes, "" );
@@ -114,6 +115,7 @@ namespace UPGMpp
             m_nClasses  = m_classNames.size();
             m_nFeatures = m_featureNames.size();
             m_weights.resize( m_nClasses, m_nFeatures );
+            m_weights.fill( 0 );
             m_label     = label;
 
         }

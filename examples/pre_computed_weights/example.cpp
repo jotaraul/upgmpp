@@ -776,6 +776,7 @@ int main (int argc, char* argv[])
     CDecodeAlphaBetaSwap   decodeAlphaBeta;
     CDecodeMaxNodePot      decodeMax;
     CDecodeTRPBP           decodeTRPBP;
+    CDecodeRBP             decodeRBP;
 
     TInferenceOptions    options;
     options.maxIterations = 100;
@@ -862,6 +863,17 @@ int main (int argc, char* argv[])
         std::cout << "[" << it->first << "] " << it->second << std::endl;
     }
 
+    decodeRBP.setOptions( options );
+    decodeRBP.decode( myGraph, results);
+
+    std::cout << "---------------------------------------------" << std::endl;
+    std::cout << "                RESULTS RBP " << std::endl;
+    std::cout << "---------------------------------------------" << std::endl;
+
+    for ( it = results.begin(); it != results.end(); it++ )
+    {
+        std::cout << "[" << it->first << "] " << it->second << std::endl;
+    }
     // We are ready to go for a walk :)
 
     return 0;

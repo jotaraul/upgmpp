@@ -66,6 +66,15 @@ namespace UPGMpp
                    std::map<size_t,Eigen::MatrixXd> &edgeBeliefs,
                    double &logZ);
     };
+
+    class CRBPInference : public CInference
+    {
+    public:
+        void infer(CGraph &graph,
+                   std::map<size_t,Eigen::VectorXd> &nodeBeliefs,
+                   std::map<size_t,Eigen::MatrixXd> &edgeBeliefs,
+                   double &logZ);
+    };
 }
 
 #endif

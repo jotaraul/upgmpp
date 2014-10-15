@@ -26,6 +26,14 @@ using namespace UPGMpp;
 using namespace std;
 using namespace Eigen;
 
+
+
+/*------------------------------------------------------------------------------
+
+                               CLBPInference
+
+------------------------------------------------------------------------------*/
+
 void CLBPInference::infer(CGraph &graph,
                           map<size_t,VectorXd> &nodeBeliefs,
                           map<size_t,MatrixXd> &edgeBeliefs,
@@ -213,16 +221,11 @@ void CLBPInference::infer(CGraph &graph,
 }
 
 
+/*------------------------------------------------------------------------------
 
+                               CTRPBPInference
 
-
-
-
-
-
-
-
-
+------------------------------------------------------------------------------*/
 
 void CTRPBPInference::infer(CGraph &graph,
                           map<size_t,VectorXd> &nodeBeliefs,
@@ -472,5 +475,25 @@ void CTRPBPInference::infer(CGraph &graph,
     // Compute logZ
 
     logZ = - BethefreeEnergy;
+
+}
+
+/*------------------------------------------------------------------------------
+
+                               CRBPInference
+
+------------------------------------------------------------------------------*/
+
+void CRBPInference::infer(CGraph &graph,
+                          map<size_t,VectorXd> &nodeBeliefs,
+                          map<size_t,MatrixXd> &edgeBeliefs,
+                          double &logZ)
+{
+    CLBPInference LBPinference;
+
+    m_options.particularS["order"] = "RBP";
+
+    LBPinference.setOptions( m_options );
+    LBPinference.infer( graph, nodeBeliefs, edgeBeliefs, logZ );
 
 }

@@ -36,7 +36,7 @@ namespace UPGMpp
 
     public:
 
-        virtual void decode( CGraph &graph, std::map<size_t,size_t> &results ) = 0;
+        virtual void decode( CGraph &graph, std::map<size_t,size_t> &results, bool debug=false ) = 0;
 
         inline void setOptions ( TInferenceOptions &options )
         {
@@ -67,43 +67,49 @@ namespace UPGMpp
     class CDecodeMaxNodePot : public CMAPDecoder
     {
     public:
-        void decode( CGraph &graph, std::map<size_t,size_t> &results );
+        void decode( CGraph &graph, std::map<size_t,size_t> &results, bool debug=false );
     };
 
     class CDecodeICM : public CMAPDecoder
     {
     public:
-        void decode( CGraph &graph, std::map<size_t,size_t> &results );
+        void decode( CGraph &graph, std::map<size_t,size_t> &results, bool debug=false );
     };
 
     class CDecodeICMGreedy : public CMAPDecoder
     {
     public:
-        void decode(CGraph &graph, std::map<size_t, size_t> &results);
+        void decode(CGraph &graph, std::map<size_t, size_t> &results, bool debug=false);
     };
 
     class CDecodeExact : public CMAPDecoder
     {
     public:
-        void decode(CGraph &graph, std::map<size_t, size_t> &results);
+        void decode(CGraph &graph, std::map<size_t, size_t> &results, bool debug=false);
     };
 
     class CDecodeLBP : public CMAPDecoder
     {
     public:
-        void decode(CGraph &graph, std::map<size_t, size_t> &results);
+        void decode(CGraph &graph, std::map<size_t, size_t> &results, bool debug=false);
     };
 
     class CDecodeTRPBP : public CMAPDecoder
     {
     public:
-        void decode(CGraph &graph, std::map<size_t, size_t> &results);
+        void decode(CGraph &graph, std::map<size_t, size_t> &results, bool debug=false);
+    };
+
+    class CDecodeRBP : public CMAPDecoder
+    {
+    public:
+        void decode(CGraph &graph, std::map<size_t, size_t> &results, bool debug=false);
     };
 
     class CDecodeGraphCuts : public CMAPDecoder
     {
     public:
-        void decode(CGraph &graph, std::map<size_t, size_t> &results);
+        void decode(CGraph &graph, std::map<size_t, size_t> &results, bool debug=false);
     };
 
     class CDecodeAlphaExpansion : public CMAPDecoder
@@ -119,7 +125,7 @@ namespace UPGMpp
             m_options.particularS["submodularApproach"] = "QPBO";
         }
 
-        void decode(CGraph &graph, std::map<size_t, size_t> &results);
+        void decode(CGraph &graph, std::map<size_t, size_t> &results, bool debug=false);
     };
 
     class CDecodeAlphaBetaSwap : public CMAPDecoder
@@ -135,7 +141,7 @@ namespace UPGMpp
             m_options.particularS["supermodularApproach"] = "originalQPBO";
         }
 
-        void decode(CGraph &graph, std::map<size_t, size_t> &results);
+        void decode(CGraph &graph, std::map<size_t, size_t> &results, bool debug=false);
     };
 
     class CDecodeWithRestarts : public CMAPDecoder
@@ -147,7 +153,7 @@ namespace UPGMpp
             m_options.particularS["method"] = "ICM";
         }
 
-        void decode(CGraph &graph, std::map<size_t, size_t> &results);
+        void decode(CGraph &graph, std::map<size_t, size_t> &results, bool debug=false);
     };
 
 }

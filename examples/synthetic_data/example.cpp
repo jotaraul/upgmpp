@@ -318,6 +318,7 @@ int main (int argc, char* argv[])
     double totalSuccess_Exact   = 0;
     double totalSuccess_LBP     = 0;
     double totalSuccess_TRPBP   = 0;
+    double totalSuccess_RBP     = 0;
     double totalSuccess_MaxNodePot     = 0;
     double totalSuccess_AlphaExpansion = 0;
     double totalSuccess_AlphaBetaSwap  = 0;
@@ -453,6 +454,7 @@ int main (int argc, char* argv[])
         CDecodeExact decodeExact;
         CDecodeLBP decodeLBP;
         CDecodeTRPBP decodeTRPBP;
+        CDecodeRBP decodeRBP;
         CDecodeAlphaExpansion decodeAlphaExpansion;
         CDecodeAlphaExpansion decodeAlphaBetaSwap;
         CDecodeMaxNodePot decodeMaxNodePot;
@@ -550,33 +552,45 @@ int main (int argc, char* argv[])
         //
 
         options.convergency = 0.0001;
-        options.maxIterations = 10;
+        options.maxIterations = 100;
         options.particularD["smoothing"] = 0.9; // A number between 0 and 1
 
         decodeLBP.setOptions( options );
         decodeLBP.decode( graph, resultsMap );
 
-        success = 0;
-
-        for ( it = resultsMap.begin(); it != resultsMap.end(); it++ )
-        {
+        for ( it = resultsMap.begin(); it != resultsMap.end(); it++ )        
             if ( it->second == groundTruth[ it->first ])
-            {
                 totalSuccess_LBP++;
-                success++;
-            }
-        }
+
+        //
+        // TRPBP
+        //
 
         options.convergency = 0.0001;
-        options.maxIterations = 10;
+        options.maxIterations = 100;
         //options.particularD["smoothing"] = 0.9; // A number between 0 and 1
 
         decodeTRPBP.setOptions( options );
-        decodeTRPBP.decode( graph, resultsMap );
+        //decodeTRPBP.decode( graph, resultsMap );
 
         for ( it = resultsMap.begin(); it != resultsMap.end(); it++ )
             if ( it->second == groundTruth[ it->first ])
                 totalSuccess_TRPBP++;
+
+        //
+        // RBP
+        //
+
+        options.convergency = 0.0001;
+        options.maxIterations = 1000;
+        //options.particularD["smoothing"] = 0.9; // A number between 0 and 1
+
+        decodeRBP.setOptions( options );
+        decodeRBP.decode( graph, resultsMap );
+
+        for ( it = resultsMap.begin(); it != resultsMap.end(); it++ )
+            if ( it->second == groundTruth[ it->first ])
+                totalSuccess_RBP++;
 
         //
         // ALPHA-EXPANSION
@@ -631,6 +645,7 @@ int main (int argc, char* argv[])
     cout << "Total Exact      success: " << 100*(totalSuccess_Exact / totalNumberOfNodes) << "%" << endl;
     cout << "Total LBP        success: " << 100*(totalSuccess_LBP / totalNumberOfNodes) << "%" << endl;
     cout << "Total TRPBP      success: " << 100*(totalSuccess_TRPBP / totalNumberOfNodes) << "%" << endl;
+    cout << "Total RBP        success: " << 100*(totalSuccess_RBP / totalNumberOfNodes) << "%" << endl;
     cout << "Total AlphaExpan success: " << 100*(totalSuccess_AlphaExpansion / totalNumberOfNodes) << "%" << endl;
     cout << "Total AlphaBetaS success: " << 100*(totalSuccess_AlphaBetaSwap / totalNumberOfNodes) << "%" << endl;
 
