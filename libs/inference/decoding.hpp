@@ -5,7 +5,6 @@
  |                                                                           |
  |              Copyright (C) 2014 Jose Raul Ruiz Sarmiento                  |
  |                 University of Malaga (jotaraul@uma.es)                    |
- |                         University of Osnabruk                            |
  |                                                                           |
  |   This program is free software: you can redistribute it and/or modify    |
  |   it under the terms of the GNU General Public License as published by    |

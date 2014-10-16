@@ -4,8 +4,7 @@
  |                   Undirected Graphical Models in C++                      |
  |                                                                           |
  |              Copyright (C) 2014 Jose Raul Ruiz Sarmiento                  |
- |                 University of Malaga (jotaraul@uma.es)                    |
- |                         University of Osnabruk                            |
+ |                 University of Malaga (jotaraul@uma.es)                    | 
  |                                                                           |
  |   This program is free software: you can redistribute it and/or modify    |
  |   it under the terms of the GNU General Public License as published by    |
@@ -244,7 +243,7 @@ int CTrainingDataSet::train( const bool debug )
 
     // Nodes
 
-    DEBUG("Preparing weights of the different node types...",1);
+    DEBUG("Preparing weights of the different node types...");
 
     N_weights = 0;
     for ( size_t i = 0; i < m_nodeTypes.size(); i++ )
@@ -274,7 +273,7 @@ int CTrainingDataSet::train( const bool debug )
 
     // Edges
 
-    DEBUG("Preparing weights of the different edge types...",1);
+    DEBUG("Preparing weights of the different edge types...");
 
     for ( size_t i = 0; i < m_edgeTypes.size(); i++ )
     {
@@ -363,7 +362,7 @@ int CTrainingDataSet::train( const bool debug )
     }
 
     //cout << "Number of weights " << N_weights << endl;
-    DEBUGD("Number of weights",N_weights,2);
+    DEBUGD("Number of weights",N_weights);
 
     //
     //  2. Initialize the weights.
@@ -405,7 +404,7 @@ int CTrainingDataSet::train( const bool debug )
         cout << "ERROR: Failed to allocate a memory block for variables." << endl;
     }    
 
-    DEBUG("Initializing parameters...",1);
+    DEBUG("Initializing parameters...");
 
     /* Initialize the parameters for the L-BFGS optimization. */
     //param.orthantwise_c = 100;
@@ -439,7 +438,7 @@ int CTrainingDataSet::train( const bool debug )
     //  4. Launch optimization (training).
     //
 
-    DEBUG("Optimizing...",1);
+    DEBUG("Optimizing...");
 
     /*
         Start the L-BFGS optimization; this will invoke the callback functions
@@ -510,7 +509,7 @@ void CTrainingDataSet::updatePseudolikelihood( CGraph &graph,
                                                         const lbfgsfloatval_t *x,
                                                         lbfgsfloatval_t *g )
 {
-     //cout << "[STATUS] Updating function value and grandients! Graph: " << graph.getID() << endl ;
+    //cout << "[STATUS] Updating function value and grandients! Graph: " << graph.getID() << endl;
     vector<CNodePtr> &nodes = graph.getNodes();
 
     vector<CNodePtr>::iterator itNodes;

@@ -5,7 +5,6 @@
  |                                                                           |
  |              Copyright (C) 2014 Jose Raul Ruiz Sarmiento                  |
  |                 University of Malaga (jotaraul@uma.es)                    |
- |                         University of Osnabruk                            |
  |                                                                           |
  |   This program is free software: you can redistribute it and/or modify    |
  |   it under the terms of the GNU General Public License as published by    |
@@ -30,8 +29,8 @@
 #include "CGraph.hpp"
 #include "base_utils.hpp"
 
-#define DEBUG(m,l) if(l<=debug) cout << m << endl;
+#define DEBUG(m) if(debug) cout << m << endl;
 
-#define DEBUGD(m,d,l) if(l<=debug) cout << m << d << endl;
+#define DEBUGD(m,d) if(debug) cout << m << d << endl;
 
 #endif

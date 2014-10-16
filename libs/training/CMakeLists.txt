@@ -1,7 +1,7 @@
 # ----------------------------------------------------------------------------
 # Master CMake file for the training library of the UPGMpp project.
 #
-#  February 2014, J.R. Ruiz-Sarmiento <jotaraul@uma.es>
+#  Started in February 2014, J.R. Ruiz-Sarmiento <jotaraul@uma.es>
 #			University of Málaga
 #			University of Osnabrück
 #

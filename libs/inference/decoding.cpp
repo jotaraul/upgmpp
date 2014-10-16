@@ -5,7 +5,6 @@
  |                                                                           |
  |              Copyright (C) 2014 Jose Raul Ruiz Sarmiento                  |
  |                 University of Malaga (jotaraul@uma.es)                    |
- |                         University of Osnabruk                            |
  |                                                                           |
  |   This program is free software: you can redistribute it and/or modify    |
  |   it under the terms of the GNU General Public License as published by    |
@@ -79,7 +78,7 @@ void CDecodeICM::decode( CGraph &graph, std::map<size_t,size_t> &results, bool d
     // Apply mask, if any
     if ( !m_mask.empty() )
     {
-        DEBUG("Applying mask to potentials...",1);
+        DEBUG("Applying mask to potentials...");
         applyMaskToPotentials(graph,m_mask);
     }
 
@@ -875,7 +874,7 @@ void CDecodeAlphaExpansion::decode( CGraph &graph,
     // Initialize the results vector
     results.clear();
 
-    DEBUG("Decoding Alpha expansion",1);
+    DEBUG("Decoding Alpha expansion");
 
     // Direct access to useful vbles
 
@@ -912,7 +911,7 @@ void CDecodeAlphaExpansion::decode( CGraph &graph,
 
     while ( !convergence && ( iteration < m_options.maxIterations ) )
     {
-        DEBUGD("Doing iteration... ",iteration,2);
+        DEBUGD("Doing iteration... ",iteration);
 
         // Store the previous assignation for convergence checking
         assignation_old = assignation;
@@ -1109,7 +1108,7 @@ void CDecodeAlphaExpansion::decode( CGraph &graph,
             }
         }
 
-        DEBUG("Checking convergence...",2);
+        DEBUG("Checking convergence...");
 
         //
         // 2.2 Check termination (convergence) conditions

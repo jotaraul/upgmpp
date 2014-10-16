@@ -1,10 +1,35 @@
+/*---------------------------------------------------------------------------*
+ |                               UPGM++                                      |
+ |                   Undirected Graphical Models in C++                      |
+ |                                                                           |
+ |              Copyright (C) 2014 Jose Raul Ruiz Sarmiento                  |
+ |                 University of Malaga (jotaraul@uma.es)                    |
+ |                                                                           |
+ |   This program is free software: you can redistribute it and/or modify    |
+ |   it under the terms of the GNU General Public License as published by    |
+ |   the Free Software Foundation, either version 3 of the License, or       |
+ |   (at your option) any later version.                                     |
+ |                                                                           |
+ |   This program is distributed in the hope that it will be useful,         |
+ |   but WITHOUT ANY WARRANTY; without even the implied warranty of          |
+ |   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the           |
+ |   GNU General Public License for more details.                            |
+ |   <http://www.gnu.org/licenses/>                                          |
+ |                                                                           |
+ *---------------------------------------------------------------------------*/
+
 TODOs:
 
-- (4) Implement decoding method ICM with restarts.
-- (3) Implement exact (brute force) inference method.
-- (2) Study and implement how to hallucinate objects and obtain their most probable location.
 - (1) Add unit test cases.
+- (2) Increment the debuging capabilities of the library.
+- (3) Better errors management.
 
+Alpha 0.0.6 (15-10-2014)
+- [DECODING] Include the debug option in decoding methods.
+- [DECODING] Added a new method for decoding: Alpha-Beta swaps based on graph cuts.
+- [DECODING] Decoding methods can now choose a random labeling to the graph nodes as initial step. The default behaviour is the labeling according to the highest node potentials.
+- [INFERENCE/DECODING] Implemented TRPBP for inference/decoding.
+- [TRAINING] Now the training can be performed using and inference or a decoding method, instead of the utilization of the pseudolikelihood function.
 
 Alpha 0.0.5 (03-04-2014)
 - [BASE] Fixed error in RemoveNode from CGraph function.

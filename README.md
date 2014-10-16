@@ -1,12 +1,40 @@
-pgm++
-=====
 
-This is a standalone C++ library for Probabilistic Graphical Models. No ROS dependencies here.
+/*---------------------------------------------------------------------------*
+ |                               UPGM++                                      |
+ |                   Undirected Graphical Models in C++                      |
+ |                                                                           |
+ |              Copyright (C) 2014 Jose Raul Ruiz Sarmiento                  |
+ |                 University of Malaga (jotaraul@uma.es)                    |
+ |                                                                           |
+ |   This program is free software: you can redistribute it and/or modify    |
+ |   it under the terms of the GNU General Public License as published by    |
+ |   the Free Software Foundation, either version 3 of the License, or       |
+ |   (at your option) any later version.                                     |
+ |                                                                           |
+ |   This program is distributed in the hope that it will be useful,         |
+ |   but WITHOUT ANY WARRANTY; without even the implied warranty of          |
+ |   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the           |
+ |   GNU General Public License for more details.                            |
+ |   <http://www.gnu.org/licenses/>                                          |
+ |                                                                           |
+ *---------------------------------------------------------------------------*/
+
+General information
+-------------------
+
+This is a standalone C++ library for Undirected Probabilistic Graphical Models. Some examples are provided for a better understanding of the library use.
+
+I want to thank Prof. Dr. Joachim Hertzberg and Mr. Martin Günter for the motivation and support that they gave me in the first steps of this library, which was started during my stay at the University of Osnabrück, Germany.
 
 Prerequisites
 -------------
 
-* Install dependencies:
+Install dependencies:
+	* Eigen.
+	* Boost.
+	* liblbfgs.
+
+- liblbfgs
 
     sudo apt-get install liblbfgs-dev
 
