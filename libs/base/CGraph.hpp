@@ -498,9 +498,9 @@ namespace UPGMpp
 
             for ( it = classes.begin(); it != classes.end(); it++ )
             {
-                CNodePtr node = getNodeWithID( it->first );
+                CNodePtr node = getNodeWithID( it->first );                
                 //unlikelihood *= node->getPotentials()(classes[node->getID()]);
-                unlikelihood += std::log(node->getPotentials()(classes[node->getID()]));
+                unlikelihood += node->getPotentials()(it->second);
             }
 
             for ( size_t index = 0; index < N_edges; index++ )
@@ -516,7 +516,6 @@ namespace UPGMpp
                     unlikelihood += std::log(edge->getPotentials()(classes[ID2],classes[ID1]));
                 else
                     unlikelihood += std::log(edge->getPotentials()(classes[ID1],classes[ID2]));
-
             }
 
             //unlikelihood = std::log( unlikelihood );

@@ -21,6 +21,7 @@
 
 #include <stdio.h>
 #include "decoding.hpp"
+#include <time.h>
 
 using namespace UPGMpp;
 using namespace std;
@@ -305,7 +306,8 @@ void decodeExactRec( CGraph &graph,
                 size_t index,
                 map<size_t,size_t> &nodesAndValuesToTest,
                 std::map<size_t,size_t> &results,
-                double &maxLikelihood);
+                double &maxLikelihood,
+                bool debug );
 
 void CDecodeExact::decode(CGraph &graph, std::map<size_t,size_t> &results, bool debug )
 {
@@ -317,7 +319,36 @@ void CDecodeExact::decode(CGraph &graph, std::map<size_t,size_t> &results, bool 
     std::vector<CNodePtr> &nodes = graph.getNodes();
     size_t index = 0;
 
-    decodeExactRec( graph, m_mask, index, nodesAndValuesToTest, results, maxLikelihood);
+    if ( debug )
+    {
+        size_t N_nodes = nodes.size();
+        size_t N_combinations = 1;
+        size_t N_combinationsWithMask = 1;
+        for ( size_t i = 0; i < N_nodes; i++ )
+        {
+            size_t nodeID = nodes[i]->getID() ;
+            size_t N_classes = nodes[i]->getType()->getNumberOfClasses();
+            N_combinations *= N_classes;
+
+            if ( !m_mask.empty() && m_mask.count( nodeID ) )
+            {
+                size_t N_classesToCheck = m_mask.at(nodeID).size();
+                N_combinationsWithMask *= N_classesToCheck;
+            }
+            else
+                N_combinationsWithMask *= N_classes;
+        }
+
+        cout << "Doing exact decoding..." << endl;
+        cout << "Number of nodes                : " <<  N_nodes << endl;
+        cout << "Number of possible combinations: " << N_combinations << endl;
+        if ( !m_mask.empty() )
+            cout << "Using masks, combinations      : " << N_combinationsWithMask << endl;
+
+    }
+
+
+    decodeExactRec( graph, m_mask, index, nodesAndValuesToTest, results, maxLikelihood, debug );
 
 }
 
@@ -326,14 +357,24 @@ void decodeExactRec( CGraph &graph,
                 size_t index,
                 map<size_t,size_t> &nodesAndValuesToTest,
                 std::map<size_t,size_t> &results,
-                double &maxLikelihood)
+                double &maxLikelihood,
+                bool debug)
 {
+    static size_t N_test = 0;
     const CNodePtr node = graph.getNode( index );
     const size_t  nodeID = node->getID();
     const CNodeTypePtr &nodeType = node->getType();
     size_t nodeClasses = nodeType->getNumberOfClasses();
     size_t totalNodes = graph.getNodes().size();
     vector<size_t> classesToCheck;
+    static time_t start;
+    static bool first = true;
+
+    if ( first )
+    {
+        time(&start);
+        first = false;
+    }
 
     for ( size_t i = 0; i < nodeClasses; i++ )
         classesToCheck.push_back(i);
@@ -365,11 +406,24 @@ void decodeExactRec( CGraph &graph,
                 results = nodesAndValuesToTest;
                 maxLikelihood = likelihood;
             }
+
+            if ( debug )
+            {
+                N_test++;
+                if ( !( N_test % 1000000 ) )
+                {
+                    time_t stop;
+                    time(&stop);
+
+                    cout << "N_test: " << N_test << endl;
+                    cout << "Finished in " <<  difftime(stop, start) << " seconds." << endl;
+                }
+            }
         }
         else
         {
             nodesAndValuesToTest[nodeID] = classToCheck;
-            decodeExactRec( graph, mask, index + 1, nodesAndValuesToTest, results, maxLikelihood);
+            decodeExactRec( graph, mask, index + 1, nodesAndValuesToTest, results, maxLikelihood, debug);
         }
     }
 }
