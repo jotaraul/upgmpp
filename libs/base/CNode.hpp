@@ -204,7 +204,7 @@ namespace UPGMpp
         /**	Function for retrieving the potentials of the node.
           * \return The potentials of the node.
           */
-        inline Eigen::VectorXd& getPotentials( bool considerFixed = false )
+        inline const Eigen::VectorXd getPotentials( bool considerFixed = false )
         {
             if ( considerFixed )
             {
