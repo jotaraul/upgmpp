@@ -564,17 +564,13 @@ namespace UPGMpp
                     if ( ID1 == nodeID )
                     {
                         CNodePtr nodePtr                = boundGraph.getNodeWithID( ID1 );
-                        Eigen::VectorXd &nodePotentials = nodePtr->getPotentials();
-
-                        newPotentials = nodePotential * (edgePotentials.row( nodeState ).transpose()).cwiseProduct( nodePotentials );
+                        Eigen::VectorXd nodePotentials  = nodePtr->getPotentials() * (edgePotentials.row( nodeState ).transpose()).cwiseProduct( nodePotentials );
                         nodePtr->setPotentials( newPotentials );
                     }
                     else
                     {
                         CNodePtr nodePtr                = boundGraph.getNodeWithID( ID2 );
-                        Eigen::VectorXd &nodePotentials = nodePtr->getPotentials();
-
-                        newPotentials = nodePotential * edgePotentials.col( nodeState ).cwiseProduct( nodePotentials );
+                        Eigen::VectorXd nodePotentials  = nodePtr->getPotentials() * edgePotentials.col( nodeState ).cwiseProduct( nodePotentials );
                         nodePtr->setPotentials( newPotentials );
                     }
                 }
