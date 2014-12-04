@@ -921,9 +921,7 @@ void CDecodeAlphaExpansion::decode( CGraph &graph,
     //          2.1.4 For each node assigned to @state in the decoding result,
     //                do an alpha move.
     //      2.2 Check convergency.
-    //
-
-    //cout << "Decoding Alpha expansion..." << endl;
+    //    
 
     // Initialize the results vector
     results.clear();
@@ -953,8 +951,10 @@ void CDecodeAlphaExpansion::decode( CGraph &graph,
     else
         cout << "[ERROR] Undefined method for performing the initial assignation." << endl;
 
+    DEBUG("Computing total potential...");
+
     // Get the likelihood of this assignation. Useful for convergence checking
-    double totalPotential = graph.getUnnormalizedLogLikelihood( assignation );
+    double totalPotential = graph.getUnnormalizedLogLikelihood( assignation, debug );
 
     //
     // 2. Do Alpha-expansions until convergence or a given number of iterations is reached.
@@ -982,15 +982,19 @@ void CDecodeAlphaExpansion::decode( CGraph &graph,
             //
             // 2.1 Ok, move across all the possible classes/states of current node type
             // For each state, check the nodes which assignation is different to
-            // such a state (alpha), and check if a move to alpha is nice.
+            // such a state (alpha), and check if a move to alpha increments the likelihood.
             //
 
             for ( size_t state = 0; state < N_classes; state++ )
             {
-                //cout << "Expanding state " << state << " in nodes of type " << nodeTypeID << endl;
+                stringstream ss;
+                ss << "Expanding state " << state << " in nodes of type " << nodeTypeID << endl;
+                DEBUG(ss.str());
 
                 map<size_t,size_t>  nodesToBind;
                 size_t              nodesOfThisType = 0;
+
+                DEBUG("Getting nodes to bound...");
 
                 // Iterate over all the nodes in the graph
                 for ( size_t node = 0; node < nodes.size(); node++ )
@@ -1013,9 +1017,11 @@ void CDecodeAlphaExpansion::decode( CGraph &graph,
                 //       (alpha) are bound to @state.
                 //
 
+                DEBUG("Getting bound graph...")
+
                 CGraph boundGraph;
 
-                if ( nodesToBind.size() == nodesOfThisType ) // Nothing to move
+                if ( nodesToBind.size() == nodesOfThisType ) // No nodes can be moved
                     continue;
 
                 // Bind
@@ -1032,6 +1038,8 @@ void CDecodeAlphaExpansion::decode( CGraph &graph,
                 // 2.1.2 Binarize the bound graph, so only two states are possible:
                 //       alpha, and the previous one from the node.
                 //
+
+                DEBUG("Binarizing bound graph...")
 
                 CNodeTypePtr binaryNodeTypePtr( new CNodeType(2,1) );
                 CEdgeTypePtr binaryEdgeTypePtr( new CEdgeType(1,binaryNodeTypePtr,
@@ -1114,6 +1122,8 @@ void CDecodeAlphaExpansion::decode( CGraph &graph,
                     // or if s/he wants to ignore graphs with supermodular
                     // energies.
 
+                    DEBUG("Cheking submodular approaches...")
+
                     string &submodularApproach =
                             m_options.particularS["submodularApproach"];
 
@@ -1145,6 +1155,8 @@ void CDecodeAlphaExpansion::decode( CGraph &graph,
                 //
                 // Call to the decodeGraphCuts method with the bound and tunned graph
                 //
+
+                DEBUG("Executing graph cuts...");
 
                 CDecodeGraphCuts decodeGraphCuts;
                 map<size_t,size_t> gcResults;

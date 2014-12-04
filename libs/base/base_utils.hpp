@@ -34,6 +34,12 @@
 using namespace Eigen;
 using namespace std;
 
+#define DEBUG(m) if(debug) cout << m << endl;
+
+#define DEBUGD(m,d) if(debug) cout << m << d << endl;
+
+
+
 namespace boost
 {
 template<class Archive, typename _Scalar, int _Rows, int _Cols, int _Options, int _MaxRows, int _MaxCols>

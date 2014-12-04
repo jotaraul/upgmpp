@@ -28,6 +28,7 @@
 #include "CNode.hpp"
 #include "CEdge.hpp"
 #include "base_utils.hpp"
+#include "base.hpp"
 
 #include <string>
 #include <vector>
@@ -391,6 +392,22 @@ namespace UPGMpp
             }
         }
 
+        /** Check if the graph is empty, i.e. there are not nodes, edges nor
+          * node types.
+          * \return true if the graph is empty, otherwise false.
+          */
+        bool isEmpty()
+        {
+            if ( m_nodes.size() > 0 )
+                return false;
+            else if ( m_edges.size() > 0 )
+                return false;
+            else if ( m_nodeTypes.size() > 0 )
+                return false;
+
+            return true;
+        }
+
         /** Method for dumping a graph to a stream.
          * \param output: output stream.
          * \param g: graph to dump.
@@ -487,14 +504,18 @@ namespace UPGMpp
          * \param classes: Classes assignation to all the nodes.
          * \return Unnormalized log likelihood.
          */
-        double getUnnormalizedLogLikelihood( std::map<size_t,size_t> &classes )
+        double getUnnormalizedLogLikelihood( std::map<size_t,size_t> &classes, bool debug = false )
         {
+            DEBUG("Computing likelihood...");
+
             double unlikelihood = 0;
 
             //size_t N_nodes = m_nodes.size();
             size_t N_edges = m_edges.size();
 
             std::map<size_t,size_t>::iterator it;
+
+            DEBUG("Computing nodes likelihood...");
 
             for ( it = classes.begin(); it != classes.end(); it++ )
             {
@@ -503,6 +524,8 @@ namespace UPGMpp
                 unlikelihood += node->getPotentials()(it->second);
             }
 
+            DEBUG("Computing edges likelihood...");
+
             for ( size_t index = 0; index < N_edges; index++ )
             {
                 CEdgePtr edge = m_edges[index];
@@ -510,75 +533,125 @@ namespace UPGMpp
                 edge->getNodes(n1,n2);
                 size_t ID1 = n1->getID();
                 size_t ID2 = n2->getID();
+                size_t IDNodeType1 = n1->getType()->getID();
+                size_t IDNodeType2 = n2->getType()->getID();
 
-                if ( ID1 > ID2 )
-                    //unlikelihood *= edge->getPotentials()(classes[ID2],classes[ID1]);
-                    unlikelihood += std::log(edge->getPotentials()(classes[ID2],classes[ID1]));
+                // Check if the nodes share the same type.
+                if ( IDNodeType1 == IDNodeType2 )
+                    // If they do, then the node with the lower id is the one appearing
+                    // first in the edge;
+                    if ( ID1 > ID2 )
+                        //unlikelihood *= edge->getPotentials()(classes[ID2],classes[ID1]);
+                        unlikelihood += std::log(edge->getPotentials()(classes[ID2],classes[ID1]));
+                    else
+                        unlikelihood += std::log(edge->getPotentials()(classes[ID1],classes[ID2]));
                 else
-                    unlikelihood += std::log(edge->getPotentials()(classes[ID1],classes[ID2]));
+                    // If not, the node with the lower nodeType is the first
+                    if ( IDNodeType1 > IDNodeType2 )
+                        unlikelihood += std::log(edge->getPotentials()(classes[ID2],classes[ID1]));
+                    else
+                        unlikelihood += std::log(edge->getPotentials()(classes[ID1],classes[ID2]));
             }
 
             //unlikelihood = std::log( unlikelihood );
 
+            DEBUG("Done.");
+
             return unlikelihood;
         }
 
-        void getBoundGraph( CGraph &boundGraph, std::map<size_t,size_t> states )
+        /** Method for getting a bound graph from the one stored into the object.
+          * \param boundGraph: resulting graph, it must be empty when the method
+          * is called.
+          * \param nodesToBound: a map containing as key the id of a node, and
+          * as value the class/state to be bound.
+          */
+        void getBoundGraph( CGraph &boundGraph,
+                            std::map<size_t,size_t> nodesToBound )
         {
-            // Copy the graph
+            // Check that the graph is empty
+            assert( boundGraph.getNodes().size() == 0 );
+
+            // Copy the graph into boundGraph
+
+            // Copy nodes
             for ( size_t node = 0; node < m_nodes.size(); node++ )
             {
                 CNodePtr nodePtr(new CNode(*m_nodes[node]));
-
                 boundGraph.addNode( nodePtr );
             }
 
+            // Copy edges
             for ( size_t edge = 0; edge < m_edges.size(); edge++ )
             {
                 CEdgePtr edgePtr( new CEdge(*m_edges[edge]));
                 boundGraph.addEdge( edgePtr );
             }
 
-            for ( std::map<size_t,size_t>::iterator it = states.begin(); it != states.end(); it++ )
+            // Okey, now iterate over the nodes to be bound, removing then from
+            // the resulting graph by expanding the potential associated with
+            // their bound state
+            for ( std::map<size_t,size_t>::iterator it = nodesToBound.begin();
+                  it != nodesToBound.end();
+                  it++ )
             {
                 size_t nodeID = it->first;
                 size_t nodeState = it->second;
 
+                // Potential of the state to be bounded
                 double nodePotential = boundGraph.getNodeWithID( nodeID )->getPotentials()( nodeState );
+
+                // Iterate over the neighbours, updating their node potentials
+                // according to the state of the node to be bound and its potential
 
                 pair<multimap<size_t,CEdgePtr>::iterator,multimap<size_t,CEdgePtr>::iterator > neighbors;
 
                 neighbors = boundGraph.getEdgesF().equal_range(nodeID);
 
-                for ( multimap<size_t,CEdgePtr>::iterator it = neighbors.first; it != neighbors.second; it++ )
+                for ( multimap<size_t,CEdgePtr>::iterator it = neighbors.first;
+                      it != neighbors.second;
+                      it++ )
                 {
-                    size_t neighborID;
-                    size_t ID1, ID2;
-
                     CEdgePtr edgePtr( (*it).second );
-
-                    edgePtr->getNodesID(ID1,ID2);
                     Eigen::MatrixXd edgePotentials = edgePtr->getPotentials();
-                    Eigen::VectorXd newPotentials;
 
+                    size_t ID1, ID2;
+                    edgePtr->getNodesID(ID1,ID2);
+
+                    // If the node to be bound is the first one appearing in the
+                    // edge.
                     if ( ID1 == nodeID )
                     {
-                        CNodePtr nodePtr                = boundGraph.getNodeWithID( ID1 );
-                        Eigen::VectorXd nodePotentials  = nodePtr->getPotentials() * (edgePotentials.row( nodeState ).transpose()).cwiseProduct( nodePotentials );
+                        CNodePtr nodePtr                = boundGraph.getNodeWithID( ID2 );
+                        Eigen::VectorXd boundPotentials = edgePotentials.row(nodeState).transpose()*nodePotential;
+                        Eigen::VectorXd newPotentials   = nodePtr->getPotentials().cwiseProduct(boundPotentials);
                         nodePtr->setPotentials( newPotentials );
                     }
-                    else
+                    else    // If it is the second one in the edge
                     {
-                        CNodePtr nodePtr                = boundGraph.getNodeWithID( ID2 );
-                        Eigen::VectorXd nodePotentials  = nodePtr->getPotentials() * edgePotentials.col( nodeState ).cwiseProduct( nodePotentials );
+                        CNodePtr nodePtr                = boundGraph.getNodeWithID( ID1 );
+                        Eigen::VectorXd boundPotentials = edgePotentials.col( nodeState )*nodePotential;
+                        Eigen::VectorXd newPotentials   = nodePtr->getPotentials().cwiseProduct(boundPotentials);
                         nodePtr->setPotentials( newPotentials );
                     }
                 }
 
+                // Now that the potential of the state of the node to bound
+                // has been expanded, delete the node from the graph.
                 boundGraph.deleteNode( nodeID );
             }
+        }
 
-
+        /** Delete all the nodes of the graph sharing the nodeType ID.
+          * \param typeID: ID of the nodeType which nodes are to be removed.
+          */
+        void deleteNodesWithTypeID( size_t &typeID )
+        {
+            for ( size_t node_index = m_nodes.size(); node_index <= 0; node_index-- )
+            {
+                if ( m_nodes[node_index]->getType()->getID() == typeID )
+                    deleteNode( m_nodes[node_index]->getID() );
+            }
         }
 
         //

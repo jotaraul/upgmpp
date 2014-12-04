@@ -29,8 +29,4 @@
 #include "CGraph.hpp"
 #include "base_utils.hpp"
 
-#define DEBUG(m) if(debug) cout << m << endl;
-
-#define DEBUGD(m,d) if(debug) cout << m << d << endl;
-
 #endif
