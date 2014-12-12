@@ -37,6 +37,9 @@ using namespace Eigen;
 
 void CDecodeMaxNodePot::decode( CGraph &graph, std::map<size_t,size_t> &results, bool debug )
 {
+    if ( graph.isEmpty() )
+        return;
+
     // Direct access to useful vbles
     const std::vector<CNodePtr> &nodes = graph.getNodes();
     size_t N_nodes = nodes.size();
@@ -67,6 +70,9 @@ void CDecodeMaxNodePot::decode( CGraph &graph, std::map<size_t,size_t> &results,
 void CDecodeICM::decode( CGraph &graph, std::map<size_t,size_t> &results, bool debug )
 {
     //cout << "Satarting ICM decoding..." << endl;
+
+    if ( graph.isEmpty() )
+        return;
 
     // Direct access to useful vbles
     const std::vector<CNodePtr> &nodes = graph.getNodes();
@@ -189,6 +195,11 @@ void CDecodeICMGreedy::decode( CGraph &graph,
                                 std::map<size_t,size_t> &results, bool debug )
 {
 
+    DEBUG("Decoding ICM Greedy");
+
+    if ( graph.isEmpty() )
+        return;
+
     // Direct access to useful vbles
     const std::vector<CNodePtr> &nodes = graph.getNodes();
     std::multimap<size_t,CEdgePtr> &edges_f = graph.getEdgesF();
@@ -219,16 +230,21 @@ void CDecodeICMGreedy::decode( CGraph &graph,
     size_t iteration = 1;
     Eigen::VectorXd v_new_potentials;
     v_new_potentials.resize( N_nodes );
+    v_potentials.setZero();
+
     map<size_t,size_t> new_results;
+
+    DEBUG("Iterating...");
 
     // Let's go!
     while ( (keep_iterating) && ( iteration <= m_options.maxIterations) )
     {
+        DEBUGD("Iteration ", iteration);
 
         // Iterate over all the nodes, and check if a more promissing class
         // is waiting for us
         for ( size_t index = 0; index < N_nodes; index++ )
-        {
+        {            
             size_t ID = nodes[index]->getID();
 
             Eigen::VectorXd potentials = nodes[index]->getPotentials( m_options.considerNodeFixedValues );
@@ -273,7 +289,7 @@ void CDecodeICMGreedy::decode( CGraph &graph,
 
         }
 
-      //  cout << "Iteration Potentials" << endl << v_new_potentials << endl;
+        //  cout << "Iteration Potentials" << endl << v_new_potentials << endl;
 
         Eigen::VectorXd difference = v_new_potentials - v_potentials;
 
@@ -289,6 +305,8 @@ void CDecodeICMGreedy::decode( CGraph &graph,
         }
         else
             keep_iterating = false;
+
+        iteration++;
     }
 
     // TODO: It could be interesting return the case of stopping iterating
@@ -311,6 +329,9 @@ void decodeExactRec( CGraph &graph,
 
 void CDecodeExact::decode(CGraph &graph, std::map<size_t,size_t> &results, bool debug )
 {
+
+    if ( graph.isEmpty() )
+        return;
 
     results.clear();
 
@@ -438,6 +459,11 @@ void decodeExactRec( CGraph &graph,
 void CDecodeLBP::decode( CGraph &graph,
                          std::map<size_t,size_t> &results, bool debug )
 {
+    DEBUG("Decoding LBP");
+
+    if ( graph.isEmpty() )
+        return;
+
     results.clear();
     const vector<CNodePtr> nodes = graph.getNodes();
     const vector<CEdgePtr> edges = graph.getEdges();
@@ -445,6 +471,8 @@ void CDecodeLBP::decode( CGraph &graph,
 
     size_t N_nodes = nodes.size();
     size_t N_edges = edges.size();
+
+    DEBUG("Getting messages...")
 
     vector<vector<VectorXd> > messages;
     messagesLBP( graph, m_options, messages );
@@ -456,6 +484,8 @@ void CDecodeLBP::decode( CGraph &graph,
     // Now that we have the messages, compute the final beliefs and fill the
     // results map.
     //
+
+    DEBUG("Computing final beliefs and filling the results map...")
 
     for ( size_t nodeIndex = 0; nodeIndex < N_nodes; nodeIndex++ )
     {
@@ -525,6 +555,9 @@ void CDecodeRBP::decode( CGraph &graph,
 void CDecodeTRPBP::decode( CGraph &graph,
                          std::map<size_t,size_t> &results, bool debug )
 {
+    if ( graph.isEmpty() )
+        return;
+
     results.clear();
     const vector<CNodePtr> nodes = graph.getNodes();
     const vector<CEdgePtr> edges = graph.getEdges();
@@ -923,10 +956,13 @@ void CDecodeAlphaExpansion::decode( CGraph &graph,
     //      2.2 Check convergency.
     //    
 
+    DEBUG("Decoding Alpha expansion");
+
+    if ( graph.isEmpty() )
+        return;
+
     // Initialize the results vector
     results.clear();
-
-    DEBUG("Decoding Alpha expansion");
 
     // Direct access to useful vbles
 
@@ -1233,6 +1269,9 @@ void CDecodeAlphaBetaSwap::decode( CGraph &graph,
 
     //cout << "Decoding Alpha expansion..." << endl;
 
+    if ( graph.isEmpty() )
+        return;
+
     // Initialize the results vector
     results.clear();
 
@@ -1487,6 +1526,9 @@ void updateResults(map<size_t,size_t> &results,
 void CDecodeWithRestarts::decode( CGraph &graph,
                                   std::map<size_t,size_t> &results, bool debug )
 {
+    if ( graph.isEmpty() )
+        return;
+
     map<size_t,vector<size_t> > partialResults;
 
     vector<CNodePtr> &nodes = graph.getNodes();

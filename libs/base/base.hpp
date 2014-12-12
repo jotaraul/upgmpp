@@ -29,4 +29,13 @@
 #include "CGraph.hpp"
 #include "base_utils.hpp"
 
+#define UPGMpp_TRY		try {
+
+#define UPGMpp_CATCH			\
+	}				\
+	catch(std::exception &e)	\
+	{				\
+		cout << "Error: " << e.what();	\
+	}	
+
 #endif

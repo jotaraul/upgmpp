@@ -647,7 +647,7 @@ namespace UPGMpp
           */
         void deleteNodesWithTypeID( size_t &typeID )
         {
-            for ( size_t node_index = m_nodes.size(); node_index <= 0; node_index-- )
+            for ( size_t node_index = m_nodes.size()-1; node_index <= 0; node_index-- )
             {
                 if ( m_nodes[node_index]->getType()->getID() == typeID )
                     deleteNode( m_nodes[node_index]->getID() );
