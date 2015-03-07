@@ -69,6 +69,8 @@ namespace UPGMpp
                                      m_features( features ),
                                      m_handCodedPotentials( false )
         {
+            assert( features.rows() == type->getNumberOfFeatures() );
+
             m_id = setID();
 
             size_t N_classes = type->getNumberOfClasses();
@@ -89,9 +91,11 @@ namespace UPGMpp
                                                              m_label ( label ),
                                                              m_handCodedPotentials( false )
         {
+            assert( features.rows() == type->getNumberOfFeatures() );
+
             m_id = setID();
 
-            // Convert the vector of features into an eigen vector
+            // Convert the vector of features into an eigen vector            
 
             m_features = vectorToEigenVector( features );
 

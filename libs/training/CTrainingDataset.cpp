@@ -349,6 +349,9 @@ int CTrainingDataSet::train( const bool debug )
             }
             else if ( typeOfEdgeFeatures(feature) == 2 )
             {
+                // Check that a previous feature exists
+                assert(feature!=0);
+
                 v_weightsMap[feature] = v_weightsMap[feature-1].transpose();
             }
 
@@ -446,6 +449,8 @@ int CTrainingDataSet::train( const bool debug )
      */
 
     int ret = lbfgs(N_weights, x, &fx, evaluate, progress, this, &param);
+
+    DEBUG("Completed! showing results...");
 
     //
     //  5. Show optimization results.

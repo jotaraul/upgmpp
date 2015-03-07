@@ -125,6 +125,12 @@ namespace UPGMpp
 
         void addEdgeType( CEdgeTypePtr edgeType, Eigen::VectorXi &typeOfEdgeFeatures )
         {
+            // Consistency checks
+            assert( edgeType->getNumberOfFeatures() == typeOfEdgeFeatures.rows() );
+
+            ITERATE_SIZE_T(typeOfEdgeFeatures)
+                assert( typeOfEdgeFeatures(i) <= 2 );
+
             // Add the edge type to the vector of edge types
             m_edgeTypes.push_back( edgeType );
             m_typesOfEdgeFeatures[ edgeType ] = typeOfEdgeFeatures;

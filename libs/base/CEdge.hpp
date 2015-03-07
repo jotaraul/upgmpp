@@ -314,22 +314,25 @@ namespace UPGMpp
         void save(Archive & ar, const unsigned int version) const
         {
             // note, version is always the latest when saving
+            ar & m_id;
+            ar & m_type;
             ar & m_n1;
             ar & m_n2;
             ar << m_features;
             ar << m_potentials;
-            ar & m_type;
-            ar & m_id;
+            ar << m_handCodedPotentials;
+
         }
         template<class Archive>
         void load(Archive & ar, const unsigned int version)
         {
+            ar & m_id;
+            ar & m_type;
             ar & m_n1;
             ar & m_n2;
             ar >> m_features;
             ar >> m_potentials;
-            ar & m_type;
-            ar & m_id;
+            ar >> m_handCodedPotentials;
         }
         BOOST_SERIALIZATION_SPLIT_MEMBER()
 

@@ -192,6 +192,11 @@ namespace UPGMpp
           */
         inline void setLabel( std::string &label ) { m_label = label; }
 
+        /**	Function for retrieving the label of the edge type.
+          * \return A copy of the label of the edge type.
+          */
+        inline std::string getLabel() const { return m_label; }
+
         /**
          */
         inline CNodeTypePtr getN1Type() { return m_nodeType1; }
@@ -233,6 +238,7 @@ namespace UPGMpp
          * \return A reference to the vector.
          */
         inline std::vector<Eigen::MatrixXd>& getWeights() { return m_weights; }
+        std::vector<Eigen::MatrixXd> getWeights() const { return m_weights; }
 
         /** Returns the number of edge features
           * \return The number of edge features.
@@ -284,6 +290,15 @@ namespace UPGMpp
         friend std::ostream& operator<<(std::ostream& output, const CEdgeType& n)
         {
             output << "ID: " << n.getID() << std::endl;
+            output << "Label: " << n.getLabel() << std::endl;
+            std::vector<Eigen::MatrixXd> weights = n.getWeights();
+            output << "Weights: " << std::endl;
+
+            for ( size_t feat = 0; feat < weights.size(); feat++ )
+            {
+                output << "For feature " << feat << ":" << std::endl;
+                output << weights[feat] << endl;
+            }
 
             return output;
         }

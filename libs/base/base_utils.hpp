@@ -38,7 +38,7 @@ using namespace std;
 
 #define DEBUGD(m,d) if(debug) cout << m << d << endl;
 
-
+#define ITERATE_SIZE_T(vector) for ( size_t i = 0; i < vector.size(); i++ )
 
 namespace boost
 {
