@@ -3,7 +3,7 @@ UPGM++
 
 Undirected Probabilistic Graphical Models in C++ 
  
-Copyright (C) 2014 Jose Raul Ruiz Sarmiento
+Copyright (C) 2014-2015 Jose Raul Ruiz Sarmiento
 University of Malaga (jotaraul@uma.es)
  
 http://mapir.isa.uma.es/mapirwebsite/index.php/graduate-students-menu/108-jose-raul-ruiz-sarmiento
