@@ -21,8 +21,8 @@
 
 #include "CTrainingDataset.hpp"
 #include <lbfgs.h>
-#include "inference.hpp"
-#include "decoding.hpp"
+#include "inference_MAP.hpp"
+#include "inference_marginal.hpp"
 
 #include <vector>
 
@@ -168,7 +168,7 @@ static lbfgsfloatval_t evaluate(
             td->updateInference( graphs[dataset], groundTruth[dataset], fx, x, g );
         else if ( to.trainingType == "decoding" )
             td->updateDecoding( graphs[dataset], groundTruth[dataset], fx, x, g );
-    }    
+    }
 
     //for ( size_t i=0; i < n; i++ )
     //       cout << "g[" << i << "] : " << g[i] << endl;
@@ -242,6 +242,8 @@ int CTrainingDataSet::train( const bool debug )
     //
 
     // Nodes
+
+    TIMER_START
 
     DEBUG("Preparing weights of the different node types...");
 
@@ -449,6 +451,8 @@ int CTrainingDataSet::train( const bool debug )
      */
 
     int ret = lbfgs(N_weights, x, &fx, evaluate, progress, this, &param);
+
+    TIMER_END(m_executionTime)
 
     DEBUG("Completed! showing results...");
 
@@ -703,7 +707,7 @@ void CTrainingDataSet::updateInference( CGraph &graph,
 
     if ( m_trainingOptions.inferenceMethod == "LBP" )
     {
-        CLBPInference LBPinfer;
+        CLBPInferenceMarginal LBPinfer;
         LBPinfer.infer( graph, nodeBeliefs, edgeBeliefs, logZ );
     }
     else
@@ -831,8 +835,8 @@ void CTrainingDataSet::updateDecoding( CGraph &graph,
 
     if ( m_trainingOptions.decodingMethod == "AlphaExpansions" )
     {
-        CDecodeAlphaExpansion decodeAlphaExpansion;
-        decodeAlphaExpansion.decode(graph,MAPResults);
+        CAlphaExpansionInferenceMAP decodeAlphaExpansion;
+        decodeAlphaExpansion.infer(graph,MAPResults);
 
         /*std::map<size_t,size_t>::iterator it;
 

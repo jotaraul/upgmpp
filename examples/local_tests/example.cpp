@@ -22,8 +22,8 @@
 
 #include "base.hpp"
 #include "training.hpp"
-#include "decoding.hpp"
-#include "inference.hpp"
+#include "inference_MAP.hpp"
+#include "inference_marginal.hpp"
 
 #include <iostream>
 #include <math.h>
@@ -1125,13 +1125,13 @@ int main (int argc, char* argv[])
         cout << "------------------------------------------------------" << endl;
 
 
-        CDecodeICM       decodeICM;
-        CDecodeICMGreedy decodeICMGreedy;        
-        CDecodeAlphaExpansion decodeAlphaExpansion;
-        CDecodeAlphaBetaSwap decodeAlphaBetaSawp;
-        CDecodeLBP      decodeLBP;
-        CDecodeTRPBP    decodeTRPBP;
-        CDecodeRBP      decodeRBP;
+        CICMInferenceMAP       decodeICM;
+        CICMGreedyInferenceMAP decodeICMGreedy;
+        CAlphaExpansionInferenceMAP decodeAlphaExpansion;
+        CAlphaBetaSwapInferenceMAP decodeAlphaBetaSawp;
+        CLBPInferenceMAP      decodeLBP;
+        CTRPBPInferenceMAP    decodeTRPBP;
+        CRBPInferenceMAP      decodeRBP;
 
         double totalSuccess_Greedy  = 0;
         double totalSuccess_ICM     = 0;
@@ -1151,7 +1151,7 @@ int main (int argc, char* argv[])
         //std::cout << "-----------------------------------" << std::endl;
 
         decodeICM.setOptions( options );
-        decodeICM.decode( graphs[graphs_to_test[i]], resultsMap );
+        decodeICM.infer( graphs[graphs_to_test[i]], resultsMap );
 
         for ( it = resultsMap.begin(); it != resultsMap.end(); it++ )
             if ( it->second == groundTruths[graphs_to_test[i]][ it->first ])
@@ -1164,7 +1164,7 @@ int main (int argc, char* argv[])
         //std::cout << "-----------------------------------" << std::endl;
 
         decodeICMGreedy.setOptions( options );
-        decodeICMGreedy.decode( graphs[graphs_to_test[i]], resultsMap );
+        decodeICMGreedy.infer( graphs[graphs_to_test[i]], resultsMap );
 
         for ( it = resultsMap.begin(); it != resultsMap.end(); it++ )
             if ( it->second == groundTruths[graphs_to_test[i]][ it->first ])
@@ -1178,7 +1178,7 @@ int main (int argc, char* argv[])
 
         options.maxIterations = 10000;
         decodeAlphaExpansion.setOptions( options );
-        decodeAlphaExpansion.decode( graphs[graphs_to_test[i]], resultsMap );
+        decodeAlphaExpansion.infer( graphs[graphs_to_test[i]], resultsMap );
 
         for ( it = resultsMap.begin(); it != resultsMap.end(); it++ )
             if ( it->second == groundTruths[graphs_to_test[i]][ it->first ])
@@ -1192,7 +1192,7 @@ int main (int argc, char* argv[])
 
         options.maxIterations = 10000;
         decodeAlphaBetaSawp.setOptions( options );
-        decodeAlphaBetaSawp.decode( graphs[graphs_to_test[i]], resultsMap );
+        decodeAlphaBetaSawp.infer( graphs[graphs_to_test[i]], resultsMap );
 
         for ( it = resultsMap.begin(); it != resultsMap.end(); it++ )
         {
@@ -1208,7 +1208,7 @@ int main (int argc, char* argv[])
 
         options.maxIterations = 10000;
         decodeLBP.setOptions( options );
-        decodeLBP.decode( graphs[graphs_to_test[i]], resultsMap );
+        decodeLBP.infer( graphs[graphs_to_test[i]], resultsMap );
 
         for ( it = resultsMap.begin(); it != resultsMap.end(); it++ )
             if ( it->second == groundTruths[graphs_to_test[i]][ it->first ])
@@ -1223,7 +1223,7 @@ int main (int argc, char* argv[])
 
         options.maxIterations = 10000;
         decodeTRPBP.setOptions( options );
-        decodeTRPBP.decode( graphs[graphs_to_test[i]], resultsMap );
+        decodeTRPBP.infer( graphs[graphs_to_test[i]], resultsMap );
 
         for ( it = resultsMap.begin(); it != resultsMap.end(); it++ )
             if ( it->second == groundTruths[graphs_to_test[i]][ it->first ])
@@ -1237,7 +1237,7 @@ int main (int argc, char* argv[])
 
         options.maxIterations = 10000;
         decodeRBP.setOptions( options );
-        //decodeRBP.decode( graphs[graphs_to_test[i]], resultsMap );
+        //decodeRBP.infer( graphs[graphs_to_test[i]], resultsMap );
 
         for ( it = resultsMap.begin(); it != resultsMap.end(); it++ )
             if ( it->second == groundTruths[graphs_to_test[i]][ it->first ])

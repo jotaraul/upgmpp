@@ -24,6 +24,11 @@ TODOs:
 - (2) Increment the debuging capabilities of the library.
 - (3) Better errors management.
 
+Beta 0.1 (23-04-2015)
+- [INFERENCE] Inference and decoding methods renamed to more coherent titles: Inference -> Inference_marginal and Decoding -> Inference_MAP.
+- [INFERECE/TRAINING] Added time execution measurements.
+- [INFERENCE_MAP] Fixed bug that causes RBP method crash when a graph without edges was processed.
+
 Alpha 0.0.6 (15-10-2014)
 - [DECODING] Include the debug option in decoding methods.
 - [DECODING] Added a new method for decoding: Alpha-Beta swaps based on graph cuts.

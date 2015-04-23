@@ -22,7 +22,6 @@
 
 #include "base.hpp"
 #include "training.hpp"
-#include "decoding.hpp"
 
 #include <iostream>
 #include <math.h>

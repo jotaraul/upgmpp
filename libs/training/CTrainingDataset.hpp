@@ -84,6 +84,7 @@ namespace UPGMpp
         std::map<CNodeTypePtr, Eigen::MatrixXi> m_nodeWeightsMap;
         std::map<CEdgeTypePtr,std::vector<Eigen::MatrixXi> > m_edgeWeightsMap;
         TTrainingOptions                        m_trainingOptions;
+        double                                  m_executionTime;
 
     public:
 
@@ -147,6 +148,8 @@ namespace UPGMpp
         {
             m_classesRelevance[nodeType] = classesRelevance;
         }
+
+        double getExecutionTime(){ return m_executionTime*pow(10,-9); }
 
 
         int train( const bool debug = false);

@@ -21,9 +21,10 @@
 
 
 #include "base.hpp"
-#include "inference.hpp"
+#include "inference_MAP.hpp"
+#include "inference_marginal.hpp"
 #include "training.hpp"
-#include "decoding.hpp"
+
 
 #include <iostream>
 #include <math.h>
@@ -313,7 +314,7 @@ int main (int argc, char* argv[])
     // Now compute the MAP decoding and show the results
     //
 
-    CDecodeICM          decodeICM;
+    CICMInferenceMAP          decodeICM;
 
     TInferenceOptions options;
     options.maxIterations   = 100;
@@ -326,7 +327,7 @@ int main (int argc, char* argv[])
     std::map<size_t,size_t> resultsMap;
 
     decodeICM.setOptions( options );
-    decodeICM.decode( graph4, resultsMap );
+    decodeICM.infer( graph4, resultsMap );
 
     std::map<size_t,size_t>::iterator it;
 

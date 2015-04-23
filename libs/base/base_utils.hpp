@@ -28,6 +28,7 @@
 #include <boost/serialization/split_member.hpp>
 #include <boost/serialization/shared_ptr.hpp>
 #include <boost/serialization/vector.hpp>
+#include <boost/date_time/posix_time/posix_time.hpp>
 
 #include <Eigen/Dense>
 
@@ -39,6 +40,12 @@ using namespace std;
 #define DEBUGD(m,d) if(debug) cout << m << d << endl;
 
 #define ITERATE_SIZE_T(vector) for ( size_t i = 0; i < vector.size(); i++ )
+
+#define TIMER_START boost::posix_time::ptime time_start(boost::posix_time::microsec_clock::local_time());
+
+#define TIMER_END(var) boost::posix_time::ptime time_end(boost::posix_time::microsec_clock::local_time()); \
+                       boost::posix_time::time_duration duration(time_end - time_start);                   \
+                       var = duration.total_nanoseconds();
 
 namespace boost
 {

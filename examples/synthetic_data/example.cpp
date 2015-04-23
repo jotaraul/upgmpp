@@ -22,7 +22,7 @@
 
 #include "base.hpp"
 #include "training.hpp"
-#include "decoding.hpp"
+#include "inference_MAP.hpp"
 
 #include <boost/random.hpp>
 #include <boost/random/normal_distribution.hpp>
@@ -448,15 +448,15 @@ int main (int argc, char* argv[])
         graph.computePotentials();
 
 
-        CDecodeICM decodeICM;
-        CDecodeICMGreedy decodeICMGreedy;
-        CDecodeExact decodeExact;
-        CDecodeLBP decodeLBP;
-        CDecodeTRPBP decodeTRPBP;
-        CDecodeRBP decodeRBP;
-        CDecodeAlphaExpansion decodeAlphaExpansion;
-        CDecodeAlphaExpansion decodeAlphaBetaSwap;
-        CDecodeMaxNodePot decodeMaxNodePot;
+        CICMInferenceMAP decodeICM;
+        CICMGreedyInferenceMAP decodeICMGreedy;
+        CExactInferenceMAP decodeExact;
+        CLBPInferenceMAP decodeLBP;
+        CTRPBPInferenceMAP decodeTRPBP;
+        CRBPInferenceMAP decodeRBP;
+        CAlphaExpansionInferenceMAP decodeAlphaExpansion;
+        CAlphaExpansionInferenceMAP decodeAlphaBetaSwap;
+        CMaxNodePotInferenceMAP decodeMaxNodePot;
 
         TInferenceOptions options;
         options.maxIterations = 100;
@@ -471,7 +471,7 @@ int main (int argc, char* argv[])
         //
 
         decodeMaxNodePot.setOptions( options );
-        decodeMaxNodePot.decode( graph, resultsMap );
+        decodeMaxNodePot.infer( graph, resultsMap );
 
         success = 0;
 
@@ -489,7 +489,7 @@ int main (int argc, char* argv[])
         //
 
         decodeICMGreedy.setOptions( options );
-        decodeICMGreedy.decode( graph, resultsMap );
+        decodeICMGreedy.infer( graph, resultsMap );
 
         success = 0;
 
@@ -510,7 +510,7 @@ int main (int argc, char* argv[])
         //
 
         decodeICM.setOptions( options );
-        decodeICM.decode( graph, resultsMap );
+        decodeICM.infer( graph, resultsMap );
 
         success = 0;
 
@@ -530,7 +530,7 @@ int main (int argc, char* argv[])
         //
 
         decodeExact.setOptions( options );
-        decodeExact.decode( graph, resultsMap );
+        decodeExact.infer( graph, resultsMap );
 
         success = 0;
 
@@ -555,7 +555,7 @@ int main (int argc, char* argv[])
         options.particularD["smoothing"] = 0.9; // A number between 0 and 1
 
         decodeLBP.setOptions( options );
-        decodeLBP.decode( graph, resultsMap );
+        decodeLBP.infer( graph, resultsMap );
 
         for ( it = resultsMap.begin(); it != resultsMap.end(); it++ )        
             if ( it->second == groundTruth[ it->first ])
@@ -570,7 +570,7 @@ int main (int argc, char* argv[])
         //options.particularD["smoothing"] = 0.9; // A number between 0 and 1
 
         decodeTRPBP.setOptions( options );
-        //decodeTRPBP.decode( graph, resultsMap );
+        //decodeTRPBP.infer( graph, resultsMap );
 
         for ( it = resultsMap.begin(); it != resultsMap.end(); it++ )
             if ( it->second == groundTruth[ it->first ])
@@ -585,7 +585,7 @@ int main (int argc, char* argv[])
         //options.particularD["smoothing"] = 0.9; // A number between 0 and 1
 
         decodeRBP.setOptions( options );
-        decodeRBP.decode( graph, resultsMap );
+        decodeRBP.infer( graph, resultsMap );
 
         for ( it = resultsMap.begin(); it != resultsMap.end(); it++ )
             if ( it->second == groundTruth[ it->first ])
@@ -598,7 +598,7 @@ int main (int argc, char* argv[])
         options.maxIterations = 10000;
 
         decodeAlphaExpansion.setOptions( options );
-        decodeAlphaExpansion.decode( graph, resultsMap );
+        decodeAlphaExpansion.infer( graph, resultsMap );
 
         success = 0;
 
@@ -618,7 +618,7 @@ int main (int argc, char* argv[])
         options.maxIterations = 100;
 
         decodeAlphaBetaSwap.setOptions( options );
-        decodeAlphaBetaSwap.decode( graph, resultsMap );
+        decodeAlphaBetaSwap.infer( graph, resultsMap );
 
         success = 0;
 

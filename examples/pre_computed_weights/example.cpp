@@ -22,7 +22,7 @@
 
 #include "base.hpp"
 #include "training.hpp"
-#include "decoding.hpp"
+#include "inference_MAP.hpp"
 
 #include <iostream>
 #include <math.h>
@@ -769,13 +769,13 @@ int main (int argc, char* argv[])
  *
  *----------------------------------------------------------------------------*/
 
-    CDecodeICM             decodeICM;
-    CDecodeWithRestarts    decodeWithRestarts;
-    CDecodeAlphaExpansion  decodeAlpha;
-    CDecodeAlphaBetaSwap   decodeAlphaBeta;
-    CDecodeMaxNodePot      decodeMax;
-    CDecodeTRPBP           decodeTRPBP;
-    CDecodeRBP             decodeRBP;
+    CICMInferenceMAP            decodeICM;
+    CRestartsInferenceMAP       decodeWithRestarts;
+    CAlphaExpansionInferenceMAP decodeAlpha;
+    CAlphaBetaSwapInferenceMAP  decodeAlphaBeta;
+    CMaxNodePotInferenceMAP     decodeMax;
+    CTRPBPInferenceMAP          decodeTRPBP;
+    CRBPInferenceMAP            decodeRBP;
 
     TInferenceOptions    options;
     options.maxIterations = 100;
@@ -786,7 +786,7 @@ int main (int argc, char* argv[])
     std::map<size_t,size_t> results;
 
     decodeICM.setOptions( options );
-    decodeICM.decode( myGraph, results);
+    decodeICM.infer( myGraph, results);
 
     std::cout << "---------------------------------------------" << std::endl;
     std::cout << "                 RESULTS ICM " << std::endl;
@@ -802,7 +802,7 @@ int main (int argc, char* argv[])
     options.particularS["method"] = "ICM";
     options.particularD["numberOfRestarts"] = 1000;
     decodeWithRestarts.setOptions( options );
-    decodeWithRestarts.decode( myGraph, results);
+    decodeWithRestarts.infer( myGraph, results);
 
     std::cout << "---------------------------------------------" << std::endl;
     std::cout << "            RESULTS ICM with restarts " << std::endl;
@@ -814,7 +814,7 @@ int main (int argc, char* argv[])
     }
 
     decodeAlpha.setOptions( options );
-    decodeAlpha.decode( myGraph, results);
+    decodeAlpha.infer( myGraph, results);
 
     std::cout << "---------------------------------------------" << std::endl;
     std::cout << "            RESULTS ALPHA EXPANSION " << std::endl;
@@ -827,7 +827,7 @@ int main (int argc, char* argv[])
 
     options.maxIterations = 100;
     decodeAlphaBeta.setOptions( options );
-    decodeAlphaBeta.decode( myGraph, results);
+    decodeAlphaBeta.infer( myGraph, results);
 
     std::cout << "---------------------------------------------" << std::endl;
     std::cout << "           RESULTS ALPHA BETA SWAP " << std::endl;
@@ -839,7 +839,7 @@ int main (int argc, char* argv[])
     }
 
     decodeMax.setOptions( options );
-    decodeMax.decode( myGraph, results);
+    decodeMax.infer( myGraph, results);
 
     std::cout << "---------------------------------------------" << std::endl;
     std::cout << "           RESULTS MAX NODE POTENTIAL " << std::endl;
@@ -851,7 +851,7 @@ int main (int argc, char* argv[])
     }
 
     decodeTRPBP.setOptions( options );
-    decodeTRPBP.decode( myGraph, results);
+    decodeTRPBP.infer( myGraph, results);
 
     std::cout << "---------------------------------------------" << std::endl;
     std::cout << "               RESULTS TRPBP " << std::endl;
@@ -863,7 +863,7 @@ int main (int argc, char* argv[])
     }
 
     decodeRBP.setOptions( options );
-    decodeRBP.decode( myGraph, results);
+    decodeRBP.infer( myGraph, results);
 
     std::cout << "---------------------------------------------" << std::endl;
     std::cout << "                RESULTS RBP " << std::endl;

@@ -4,7 +4,7 @@
 #  Run with "cmake ." at the root directory to build the makefiles for 
 #   the software.
 #
-#  Started in February 2014, J.R. Ruiz-Sarmiento <jotaraul@uma.es>
+#  Started in February 2014-2015, J.R. Ruiz-Sarmiento <jotaraul@uma.es>
 #			University of Málaga
 #
 #  NOTE: CMake can be obtained at http://www.cmake.org/

@@ -103,7 +103,7 @@ size_t UPGMpp::messagesLBP(CGraph &graph,
     for ( iteration = 0; iteration < options.maxIterations; iteration++ )
     {
         // Variables used by Residual Belief Propagation
-        size_t edgeWithMaxDiffIndex;
+        int edgeWithMaxDiffIndex = -1;
         VectorXd associatedMessage;
         bool from1to2;
         double maxDifference = -1;
@@ -239,7 +239,7 @@ size_t UPGMpp::messagesLBP(CGraph &graph,
                 // newMessage is the one with the higest residual till the
                 // moment. Otherwise, set the new message as the current one
                 if ( options.particularS["order"] == "RBP" )
-                {
+                {                    
                     if ( nodeID == ID1 )
                     {
                         VectorXd differences = messages[edgeIndex][0] - newMessage;
@@ -278,7 +278,7 @@ size_t UPGMpp::messagesLBP(CGraph &graph,
 
         } // Nodes
 
-        if ( options.particularS["order"] == "RBP" )
+        if ( options.particularS["order"] == "RBP" && ( edgeWithMaxDiffIndex =! -1 ))
         {
             if ( from1to2 )
                 messages[ edgeWithMaxDiffIndex ][0] = associatedMessage;

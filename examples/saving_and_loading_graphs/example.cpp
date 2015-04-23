@@ -22,7 +22,7 @@
 
 #include "base.hpp"
 #include "training.hpp"
-#include "decoding.hpp"
+#include "inference_MAP.hpp"
 
 #include <iostream>
 #include <math.h>

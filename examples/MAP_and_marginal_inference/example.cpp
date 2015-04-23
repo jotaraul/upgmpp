@@ -22,8 +22,8 @@
 
 #include "base.hpp"
 #include "training.hpp"
-#include "decoding.hpp"
-#include "inference.hpp"
+#include "inference_MAP.hpp"
+#include "inference_marginal.hpp"
 
 #include <iostream>
 #include <math.h>
@@ -259,11 +259,11 @@ int main (int argc, char* argv[])
     cout << "------------------------------------------------------" << endl;
 
 
-    CDecodeICM       decodeICM;
-    CDecodeICMGreedy decodeICMGreedy;
-    CDecodeExact     decodeExact;
-    CDecodeLBP       decodeLBP;
-    CDecodeAlphaExpansion decodeAlphaExpansion;
+    CICMInferenceMAP       decodeICM;
+    CICMGreedyInferenceMAP decodeICMGreedy;
+    CExactInferenceMAP     decodeExact;
+    CLBPInferenceMAP       decodeLBP;
+    CAlphaExpansionInferenceMAP decodeAlphaExpansion;
 
     TInferenceOptions options;
     options.maxIterations = 100;
@@ -274,7 +274,7 @@ int main (int argc, char* argv[])
     std::cout << "-----------------------------------" << std::endl;
 
     decodeICM.setOptions( options );
-    decodeICM.decode( testGraph, resultsMap );
+    decodeICM.infer( testGraph, resultsMap );
 
     showResults( resultsMap );
 
@@ -283,7 +283,7 @@ int main (int argc, char* argv[])
     std::cout << "-----------------------------------" << std::endl;
 
     decodeICMGreedy.setOptions( options );
-    decodeICMGreedy.decode( testGraph, resultsMap );
+    decodeICMGreedy.infer( testGraph, resultsMap );
 
     showResults( resultsMap );
 
@@ -292,7 +292,7 @@ int main (int argc, char* argv[])
     std::cout << "-----------------------------------" << std::endl;
 
     decodeExact.setOptions( options );
-    decodeExact.decode( testGraph, resultsMap );
+    decodeExact.infer( testGraph, resultsMap );
 
     showResults( resultsMap );
 
@@ -301,7 +301,7 @@ int main (int argc, char* argv[])
     std::cout << "-----------------------------------" << std::endl;
 
     decodeAlphaExpansion.setOptions( options );
-    decodeAlphaExpansion.decode( testGraph, resultsMap );
+    decodeAlphaExpansion.infer( testGraph, resultsMap );
 
     showResults( resultsMap );
 
@@ -313,7 +313,7 @@ int main (int argc, char* argv[])
     options.maxIterations = 10;
 
     decodeLBP.setOptions( options );
-    decodeLBP.decode( testGraph, resultsMap );
+    decodeLBP.infer( testGraph, resultsMap );
 
     showResults( resultsMap );
 
@@ -332,7 +332,7 @@ int main (int argc, char* argv[])
     std::cout << "     LOOPY BELIEF PROPAGATION " << std::endl;
     std::cout << "-----------------------------------" << std::endl;
 
-    CLBPInference LBPInference;
+    CLBPInferenceMarginal LBPInference;
 
     map<size_t,VectorXd> nodeBeliefs;
     map<size_t,MatrixXd> edgeBeliefs;
@@ -361,7 +361,7 @@ int main (int argc, char* argv[])
     std::cout << "    TREE REPARAMETRIZATION BP " << std::endl;
     std::cout << "-----------------------------------" << std::endl;
 
-    CTRPBPInference TRPBPInference;
+    CTRPBPInferenceMarginal TRPBPInference;
 
     TRPBPInference.infer( testGraph, nodeBeliefs, edgeBeliefs, logZ );
 
