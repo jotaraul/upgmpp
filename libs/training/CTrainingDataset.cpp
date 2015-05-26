@@ -247,7 +247,7 @@ int CTrainingDataSet::train( const bool debug )
 
     DEBUG("Preparing weights of the different node types...");
 
-    N_weights = 0;
+    N_weights = 1;
     for ( size_t i = 0; i < m_nodeTypes.size(); i++ )
     {
         size_t N_cols = m_nodeTypes[i]->getWeights().cols();
@@ -356,6 +356,28 @@ int CTrainingDataSet::train( const bool debug )
 
                 v_weightsMap[feature] = v_weightsMap[feature-1].transpose();
             }
+            else if ( typeOfEdgeFeatures(feature) == 3 ) // Weights only in the diagonal
+            {
+                size_t N_cols = m_edgeTypes[i]->getWeights()[feature].cols();
+                size_t N_rows = m_edgeTypes[i]->getWeights()[feature].rows();
+
+                if ( N_cols != N_rows )
+                    std::logic_error("Non square matrix assigned type of weights 3");
+
+                Eigen::MatrixXi weightsMap;
+                weightsMap.resize( N_rows, N_rows );
+                weightsMap.fill(0);
+
+                for ( size_t row = 0; row < N_rows; row++)
+                {
+                    weightsMap(row,row) = index;
+                    index++;
+                }
+
+                v_weightsMap[feature] = weightsMap;
+
+                N_weights += N_rows;
+            }
 
             //cout << "Map for feature" << feature << endl;
             //cout << v_weightsMap[feature] << endl;
@@ -367,7 +389,7 @@ int CTrainingDataSet::train( const bool debug )
     }
 
     //cout << "Number of weights " << N_weights << endl;
-    DEBUGD("Number of weights",N_weights);
+    DEBUGD("Number of weights ",N_weights);
 
     //
     //  2. Initialize the weights.

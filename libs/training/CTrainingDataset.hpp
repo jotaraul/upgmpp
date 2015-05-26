@@ -130,7 +130,7 @@ namespace UPGMpp
             assert( edgeType->getNumberOfFeatures() == typeOfEdgeFeatures.rows() );
 
             ITERATE_SIZE_T(typeOfEdgeFeatures)
-                assert( typeOfEdgeFeatures(i) <= 2 );
+                assert( typeOfEdgeFeatures(i) <= 3 );
 
             // Add the edge type to the vector of edge types
             m_edgeTypes.push_back( edgeType );
