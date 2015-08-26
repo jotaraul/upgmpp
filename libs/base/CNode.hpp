@@ -91,8 +91,6 @@ namespace UPGMpp
                                                              m_label ( label ),
                                                              m_handCodedPotentials( false )
         {
-            assert( features.rows() == type->getNumberOfFeatures() );
-
             m_id = setID();
 
             // Convert the vector of features into an eigen vector            
