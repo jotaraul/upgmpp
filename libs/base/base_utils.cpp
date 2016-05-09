@@ -4,7 +4,7 @@
  |                   Undirected Graphical Models in C++                      |
  |                                                                           |
  |              Copyright (C) 2014 Jose Raul Ruiz Sarmiento                  |
- |                 University of Malaga (jotaraul@uma.es)                    | 
+ |                 University of Malaga (jotaraul@uma.es)                    |
  |                                                                           |
  |   This program is free software: you can redistribute it and/or modify    |
  |   it under the terms of the GNU General Public License as published by    |
@@ -34,3 +34,103 @@
 
     return eigenVector;
 }*/
+
+Eigen::VectorXd UPGMpp::logWithLove(Eigen::VectorXd &v)
+{
+    Eigen::VectorXd log;
+    size_t N = v.rows();
+    log.resize(N);
+
+    for ( size_t i = 0; i < N; i++)
+    {
+        if ( !v(i) )
+            log(i) = std::log(std::numeric_limits<double>::min());
+        else
+            log(i) = std::log(v(i));
+    }
+
+    return log;
+}
+
+//void fastLog(double x, double &logR)
+//{
+//    logR = 0;
+//    for ( double n = 0; n < 1; n++ )
+//        logR += (1/(2*n+1))*pow(((pow(x,2)-1)/(pow(x,2)+1)),2*n+1);
+//}
+
+void fastLog(double x, double &logR)
+{
+    for ( int n = 1; n < 15; n++ )
+    {
+        //cout << " " << logR << " " << (1/(2*n+1))*pow(((pow(x,2)-1)/(pow(x,2)+1)),2*n+1) << endl;
+        //        logR += (1/(2*n+1))*pow(((pow(x,2)-1)/(pow(x,2)+1)),2*n+1);
+        if ( n%2 )
+            logR += (1/static_cast<double>(n))*pow(x-1,n);
+        else
+            logR -= (1/static_cast<double>(n))*pow(x-1,n);
+    }
+
+}
+
+Eigen::MatrixXd UPGMpp::logWithLove(Eigen::MatrixXd &m)
+{
+    Eigen::MatrixXd log;
+    size_t N_rows = m.rows();
+    size_t N_cols = m.cols();
+
+    log.resize(N_rows, N_cols);
+
+    for ( size_t row = 0; row < N_rows; row++)
+        for ( size_t col = 0; col < N_cols; col++ )
+        {
+            if ( !m(row,col) )
+            {
+                //                double logV;
+                //                fastLog(1e-10,logV);
+                //                log(row,col) = logV;
+
+                log(row,col) = std::log(std::numeric_limits<double>::min());
+            }
+            else
+            {
+                //                double logV;
+                //                fastLog(m(row,col),logV);
+                //                log(row,col) = logV;
+
+                log(row,col) = std::log(m(row,col));
+            }
+        }
+
+    return log;
+}
+
+void UPGMpp::logWithLove(Eigen::MatrixXd &m, Eigen::MatrixXd &log)
+{
+    size_t N_rows = m.rows();
+    size_t N_cols = m.cols();
+
+    log.resize(N_rows, N_cols);
+
+    for ( size_t row = 0; row < N_rows; row++)
+        for ( size_t col = 0; col < N_cols; col++ )
+        {
+            if ( !m(row,col) )
+            {
+                                double logV;
+                                fastLog(1e-10,logV);
+                                log(row,col) = logV;
+
+                //log(row,col) = std::log(std::numeric_limits<double>::min());
+            }
+            else
+            {
+                                double logV;
+                                fastLog(m(row,col),logV);
+                                log(row,col) = logV;
+
+                //log(row,col) = std::log(m(row,col));
+            }
+        }
+
+}

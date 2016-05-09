@@ -4,7 +4,7 @@
 #  Run with "cmake ." at the root directory to build the makefiles for 
 #   the software.
 #
-#  Started in February 2014-2015, J.R. Ruiz-Sarmiento <jotaraul@uma.es>
+#  Started in February 2014-2016, J.R. Ruiz-Sarmiento <jotaraul@uma.es>
 #			University of Málaga
 #
 #  NOTE: CMake can be obtained at http://www.cmake.org/
@@ -49,6 +49,30 @@ include_directories(${Boost_INCLUDE_DIRS})
 #include_directories(${libLBFGS_INCLUDE_DIR})
 #find_path(libLBGS_LIBRARY_DIR "./" CACHE FILEPATH "Directory of the libBFGS library directory")
 
+# OPENMP
+
+set(UPGMpp_USING_OMPENMP "FALSE" CACHE BOOL
+  "Check if you want to parallelize some parts of the code using OpenMP.")
+
+IF (UPGMpp_USING_OMPENMP)
+
+	find_package(OpenMP REQUIRED)
+        set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${OpenMP_CXX_FLAGS}")
+
+ENDIF (UPGMpp_USING_OMPENMP)
+
+
+#------------------------------------------------------------------------------#
+#                            COMPILATION FLAGS
+#------------------------------------------------------------------------------#
+
+set(ENABLE_OPTIMIZATION_FLAGS "FALSE" CACHE BOOL
+  "Check if you want to add optimization flags (only support for GNU compilers yet).")
+
+IF(ENABLE_OPTIMIZATION_FLAGS AND CMAKE_COMPILER_IS_GNUCXX AND NOT CMAKE_BUILD_TYPE MATCHES "Debug")
+	SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -O3 -mtune=native -march=native -mfpmath=sse -funroll-loops")
+ENDIF(ENABLE_OPTIMIZATION_FLAGS AND CMAKE_COMPILER_IS_GNUCXX AND NOT CMAKE_BUILD_TYPE MATCHES "Debug")
+
 
 #------------------------------------------------------------------------------#
 #                                  TARGET
@@ -62,7 +86,7 @@ SET(LIBRARIES "")
 
 FOREACH( LIBRARY ${UPGM++_LIBRARIES} )
 	ADD_SUBDIRECTORY(libs/${LIBRARY})
-	INCLUDE_DIRECTORIES(${CMAKE_SOURCE_DIR}/libs/${LIBRARY})
+        INCLUDE_DIRECTORIES(${CMAKE_SOURCE_DIR}/libs/${LIBRARY})
 	SET(INC_DIR ${INC_DIR}${CMAKE_SOURCE_DIR}/libs/${LIBRARY}\;)
 	SET(LIBRARIES ${LIBRARIES}${PROJECT_BINARY_DIR}/libs/libUPGMplusplus-${LIBRARY}.so\;)
 	set_target_properties(${LIBRARY} PROPERTIES PREFIX "libUPGMplusplus-")
@@ -124,4 +148,14 @@ IF(UNIX)
 	#INSTALL(FILES cmake/FindUPGMplusplus.cmake DESTINATION ${CMAKE_ROOT}/Modules/)
 	INSTALL(FILES ${PROJECT_BINARY_DIR}/${PROJECT_NAME}Config.cmake DESTINATION 	${CMAKE_INSTALL_PREFIX}/lib/cmake/${PROJECT_NAME})
 ENDIF(UNIX)
+
+
+#------------------------------------------------------------------------------#
+#                          Status messages
+#------------------------------------------------------------------------------#
+
+IF(CMAKE_COMPILER_IS_GNUCXX AND NOT CMAKE_BUILD_TYPE MATCHES "Debug")
+	MESSAGE(STATUS "Compiler flags: " ${CMAKE_CXX_FLAGS})
+ENDIF(CMAKE_COMPILER_IS_GNUCXX AND NOT CMAKE_BUILD_TYPE MATCHES "Debug")
+
 

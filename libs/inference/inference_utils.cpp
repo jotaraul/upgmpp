@@ -71,16 +71,25 @@ size_t UPGMpp::messagesLBP(CGraph &graph,
 
             // Messages from first node of the edge to the second one, so the size of
             // the message has to be the same as the number of classes of the second node.
-            messages[i][0].resize( graph.getNodeWithID( ID2 )->getPotentials( options.considerNodeFixedValues ).rows() );
-            messages[i][0].fill(1);
+            double N_classes = graph.getNodeWithID( ID2 )->getPotentials( options.considerNodeFixedValues ).rows();
+            messages[i][0].resize( N_classes );
+            messages[i][0].fill(1.0/N_classes);
             // Just the opposite as before.
-            messages[i][1].resize( graph.getNodeWithID( ID1 )->getPotentials( options.considerNodeFixedValues ).rows() );
-            messages[i][1].fill(1);
+            N_classes = graph.getNodeWithID( ID1 )->getPotentials( options.considerNodeFixedValues ).rows();
+            messages[i][1].resize( N_classes );
+            messages[i][1].fill(1.0/N_classes);
         }
 
         totalSumOfMsgs += messages[i][0].rows() + messages[i][1].rows();
 
     }
+
+//    cout << "Initial Messages:" << endl;
+
+//    for ( size_t i=0; i < messages.size(); i++)
+//        for ( size_t j=0; j < messages[i].size(); j++)
+//            for ( size_t k=0; k < messages[i][j].size(); k++ )
+//                cout << messages[i][j][k] << " ";
 
     vector<vector<VectorXd> > previousMessages;
 
@@ -99,9 +108,19 @@ size_t UPGMpp::messagesLBP(CGraph &graph,
     //
 
     size_t iteration;
+//    cout << endl;
 
     for ( iteration = 0; iteration < options.maxIterations; iteration++ )
     {
+//        cout << "Messages " << iteration << ":" << endl;
+
+//        for ( size_t i=0; i < messages.size(); i++)
+//            for ( size_t j=0; j < messages[i].size(); j++)
+//                for ( size_t k=0; k < messages[i][j].size(); k++ )
+//                    cout << messages[i][j][k] << " ";
+
+//        cout << endl;
+
         // Variables used by Residual Belief Propagation
         int edgeWithMaxDiffIndex = -1;
         VectorXd associatedMessage;
@@ -132,7 +151,8 @@ size_t UPGMpp::messagesLBP(CGraph &graph,
                   itNeigbhor != neighbors.second;
                   itNeigbhor++ )
             {
-                VectorXd nodePotPlusIncMsg = nodePtr->getPotentials( options.considerNodeFixedValues);
+                VectorXd nodePotPlusIncMsg = nodePtr->getPotentials( options.considerNodeFixedValues );
+//                cout << "nodePotPlusIncMsg Orig: " << nodePotPlusIncMsg.transpose() << endl;
                 size_t neighborID;
                 size_t ID1, ID2;
                 CEdgePtr edgePtr( (*itNeigbhor).second );
@@ -162,11 +182,19 @@ size_t UPGMpp::messagesLBP(CGraph &graph,
                     if ( ( neighborID != ID11 ) && ( neighborID != ID12 ) )
                     {
                         if ( nodeID == ID11 )
+                        {
+//                            cout << "nodePotPlusIncMsg Prod: " << messages[ edgeIndex ][ 1 ].transpose() << endl;
                             nodePotPlusIncMsg =
                                     nodePotPlusIncMsg.cwiseProduct(messages[ edgeIndex ][ 1 ]);
+//                            cout << "nodePotPlusIncMsg Prod2: " << nodePotPlusIncMsg.transpose() << endl;
+                        }
                         else // nodeID == ID2
+                        {
+//                            cout << "nodePotPlusIncMsg Prod: " << messages[ edgeIndex ][ 0 ].transpose() << endl;
                             nodePotPlusIncMsg =
                                     nodePotPlusIncMsg.cwiseProduct(messages[ edgeIndex ][ 0 ]);
+//                            cout << "nodePotPlusIncMsg Prod2: " << nodePotPlusIncMsg.transpose() << endl;
+                        }
                     }
                 }
 
@@ -189,11 +217,18 @@ size_t UPGMpp::messagesLBP(CGraph &graph,
                 {
                     // Multiply both, and update the potential
 
+//                    cout << "Edge potentials:" << edgePotentials.transpose() << endl;
+//                    cout << "nodePotPlusIncMsg:" << nodePotPlusIncMsg.transpose() << endl;
                     newMessage = edgePotentials * nodePotPlusIncMsg;
+
+                    // Normalize new message
+                    if (newMessage.sum())
+                        newMessage = newMessage / newMessage.sum();
+
+//                    cout << "New message 3:" << newMessage.transpose() << endl;
                 }
                 else
                 {
-
                     if ( nodeID == ID1 )
                         newMessage.resize(messages[ edgeIndex ][0].rows());
                     else
@@ -213,7 +248,8 @@ size_t UPGMpp::messagesLBP(CGraph &graph,
                     }
 
                     // Normalize new message
-                    newMessage = newMessage / newMessage.sum();
+                    if (newMessage.sum())
+                        newMessage = newMessage / newMessage.sum();
 
                     //cout << "New message: " << endl << newMessage << endl;
                 }

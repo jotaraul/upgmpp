@@ -143,6 +143,13 @@ namespace UPGMpp
 
         return true;
     }
+
+    extern Eigen::VectorXd logWithLove(Eigen::VectorXd &v);
+
+    extern Eigen::MatrixXd logWithLove(Eigen::MatrixXd &m);
+
+    extern void logWithLove(Eigen::MatrixXd &m, Eigen::MatrixXd &log);
+
 }
 
 #endif

@@ -20,6 +20,7 @@
  *---------------------------------------------------------------------------*/
 
 #include "inference_marginal.hpp"
+#include "base_utils.hpp"
 
 using namespace UPGMpp;
 using namespace std;
@@ -45,6 +46,7 @@ void CLBPInferenceMarginal::infer(CGraph &graph,
     //  3. Compute edge beliefs
     //  4. Compute logZ
     //
+    boost::posix_time::ptime time_0(boost::posix_time::microsec_clock::local_time());
 
     nodeBeliefs.clear();
     edgeBeliefs.clear();
@@ -64,6 +66,8 @@ void CLBPInferenceMarginal::infer(CGraph &graph,
     bool                        maximize = false;
 
     messagesLBP( graph, m_options, messages, maximize );
+
+    boost::posix_time::ptime time_1(boost::posix_time::microsec_clock::local_time());
 
     //
     // 2. Compute node beliefs
@@ -94,12 +98,20 @@ void CLBPInferenceMarginal::infer(CGraph &graph,
         }
 
         // Normalize
-        nodePotPlusIncMsg = nodePotPlusIncMsg / nodePotPlusIncMsg.sum();
+
+        double sumNodePotPlusIncMsg = nodePotPlusIncMsg.sum();
+
+        if ( sumNodePotPlusIncMsg )
+            nodePotPlusIncMsg = nodePotPlusIncMsg / sumNodePotPlusIncMsg;
+
+        // Set
 
         nodeBeliefs[ nodeID ] = nodePotPlusIncMsg;
 
-        //cout << "Beliefs of node " << nodeIndex << endl << nodePotPlusIncMsg << endl;
+        //cout << "Beliefs of node " << nodeIndex << endl << nodePotPlusIncMsg.transpose() << endl;
     }
+
+    boost::posix_time::ptime time_2(boost::posix_time::microsec_clock::local_time());
 
     //
     // 3. Compute edge beliefs
@@ -150,13 +162,19 @@ void CLBPInferenceMarginal::infer(CGraph &graph,
         //cout << "Edge potentials" << endl << edgePotentials << endl;
         //cout << "Edge beliefs" << endl << edgeBelief << endl;
 
-        // Normalize
-        edgeBelief = edgeBelief / edgeBelief.sum();
+        // Normalize        
 
+        double sumEdgeBelief = edgeBelief.sum();
 
+        if (sumEdgeBelief)
+            edgeBelief = edgeBelief / sumEdgeBelief;
+
+        // Set
 
         edgeBeliefs[ edgeID ] = edgeBelief;
     }
+
+    boost::posix_time::ptime time_3(boost::posix_time::microsec_clock::local_time());
 
     //
     // 4. Compute logZ
@@ -177,7 +195,7 @@ void CLBPInferenceMarginal::infer(CGraph &graph,
 
         // Useful computations and shorcuts
         VectorXd &nodeBelief        = nodeBeliefs[nodeID];
-        VectorXd logNodeBelief      = nodeBeliefs[nodeID].array().log();
+        VectorXd logNodeBelief      = UPGMpp::logWithLove(nodeBeliefs[nodeID]);//[nodeID].array().log();
         VectorXd nodePotentials    = nodePtr->getPotentials( m_options.considerNodeFixedValues );
         VectorXd logNodePotentials = nodePotentials.array().log();
 
@@ -188,35 +206,90 @@ void CLBPInferenceMarginal::infer(CGraph &graph,
         entropyNodes += N_Neighbors*( nodeBelief.cwiseProduct( logNodePotentials ).sum() );
     }
 
-    // Compute energy and entropy from nodes
+    boost::posix_time::ptime time_41(boost::posix_time::microsec_clock::local_time());
+
+    // Compute energy and entropy from edges
 
     for ( size_t edgeIndex = 0; edgeIndex < N_edges; edgeIndex++ )
     {
+        boost::posix_time::ptime time_411(boost::posix_time::microsec_clock::local_time());
+
         CEdgePtr edgePtr = edges[ edgeIndex ];
         size_t   edgeID  = edgePtr->getID();
 
+        boost::posix_time::ptime time_412(boost::posix_time::microsec_clock::local_time());
+
         // Useful computations and shorcuts
         MatrixXd &edgeBelief       = edgeBeliefs[ edgeID ];
-        MatrixXd logEdgeBelief     = edgeBelief.array().log();
+
+        if ( ( edgeBelief.array() > 1e-10).all() )
+        {
+            //MatrixXd logEdgeBelief     = edgeBelief.array().log();
+            MatrixXd logEdgeBelief;
+            UPGMpp::logWithLove(edgeBelief,logEdgeBelief);
+
+            // Entropy from the edge
+            energyEdges += edgeBelief.cwiseProduct( logEdgeBelief ).sum();
+        }
+
+        boost::posix_time::ptime time_413(boost::posix_time::microsec_clock::local_time());
+
         MatrixXd &edgePotentials   = edgePtr->getPotentials();
         MatrixXd logEdgePotentials = edgePotentials.array().log();
 
-        // Entropy from the edge
-        energyEdges += edgeBelief.cwiseProduct( logEdgeBelief ).sum();
+        boost::posix_time::ptime time_414(boost::posix_time::microsec_clock::local_time());
 
         // Energy from the edge
         entropyEdges += edgeBelief.cwiseProduct( logEdgePotentials ).sum();
 
+        boost::posix_time::ptime time_415(boost::posix_time::microsec_clock::local_time());
+
+//        cout << "Time infer 411 " << boost::posix_time::time_duration(time_412 - time_411).total_nanoseconds() << endl;
+//        cout << "Time infer 412 " << boost::posix_time::time_duration(time_413 - time_412).total_nanoseconds() << endl;
+//        cout << "Time infer 413 " << boost::posix_time::time_duration(time_414 - time_413).total_nanoseconds() << endl;
+//        cout << "Time infer 414 " << boost::posix_time::time_duration(time_415 - time_414).total_nanoseconds() << endl;
     }
 
     // Final Bethe free energy
 
     double BethefreeEnergy = ( energyNodes - energyEdges ) - ( entropyNodes - entropyEdges );
 
+//    if ( isnan(BethefreeEnergy) )
+//    {
+//            cout << "Messages:" << endl;
+
+//            for ( size_t i=0; i < messages.size(); i++)
+//                for ( size_t j=0; j < messages[i].size(); j++)
+//                    for ( size_t k=0; k < messages[i][j].size(); k++ )
+//                        cout << messages[i][j][k] << " ";
+
+//            cout << endl;
+
+//        for ( size_t nodeIndex = 0; nodeIndex < N_nodes; nodeIndex++ )
+//        {
+//            const CNodePtr nodePtr = graph.getNode( nodeIndex );
+//            size_t         nodeID  = nodePtr->getID();
+
+//            cout << "Beliefs of node " << nodeIndex << endl << nodeBeliefs[ nodeID ].transpose() << endl;
+//        }
+
+//        cout << "energyNodes: " << energyNodes << endl;
+//        cout << "energyEdges: " << energyEdges << endl;
+//        cout << "entropyNodes: " << entropyNodes << endl;
+//        cout << "entropyEdges: " << entropyEdges << endl;
+//    }
+
     // Compute logZ
 
     logZ = - BethefreeEnergy;
 
+    boost::posix_time::ptime time_42(boost::posix_time::microsec_clock::local_time());
+
+//    cout << "Time infer 1 " << boost::posix_time::time_duration(time_1 - time_0).total_nanoseconds() << endl;
+//    cout << "Time infer 2 " << boost::posix_time::time_duration(time_2 - time_1).total_nanoseconds() << endl;
+//    cout << "Time infer 3 " << boost::posix_time::time_duration(time_3 - time_2).total_nanoseconds() << endl;
+//    cout << "Time infer 41 " << boost::posix_time::time_duration(time_41 - time_3).total_nanoseconds() << endl;
+//    cout << "Time infer 42 " << boost::posix_time::time_duration(time_42 - time_41).total_nanoseconds() << endl;
 }
 
 

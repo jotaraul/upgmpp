@@ -42,6 +42,31 @@ namespace UPGMpp
  *
  *---------------------------------------------------------------------------*/
 
+    struct TSGDOptions
+    {
+        double          stepSize;
+        double          gradientDiffToConverge;
+        int             evaluationsPerStep;
+        std::string     updateMethod;
+        double          storeProgressEach;
+        double          checkConvergencyEach;
+        double          momentum_alpha;
+        double          metaDescent_mu;
+        double          metaDescent_lambda;
+
+        TSGDOptions() : evaluationsPerStep(1),
+                        stepSize(1e-4),
+                        gradientDiffToConverge(1e-12),
+                        updateMethod("standard"),
+                        storeProgressEach(10),
+                        checkConvergencyEach(1000),
+                        momentum_alpha(0.1),
+                        metaDescent_mu(0.1),
+                        metaDescent_lambda(0.8)
+
+        {}
+    };
+
     struct TTrainingOptions
     {
         bool            showTrainingProgress;
@@ -52,10 +77,16 @@ namespace UPGMpp
         int             linearSearchMethod;
         int             maxIterations;
         bool            classRelevance;
+        int             numOfRandomStarts; // Used with Viterbi (MAP) training
+        bool            parallelize; // Parallelize training? OMP must has been enabled
+        bool            logTraining;
+        int             iterationResolution;
+        TSGDOptions     sgd;
         std::string     trainingType;
         std::string     inferenceMethod;
         std::string     decodingMethod;
-        std::vector<double>  lambda;
+        std::string     optimizationMethod;
+        std::vector<double>  lambda;        
 
         TTrainingOptions(): showTrainingProgress(true),
                             showTrainedWeights(false),
@@ -64,11 +95,31 @@ namespace UPGMpp
                             edgeLambda(0),
                             linearSearchMethod(0),
                             maxIterations(2000),
+                            parallelize(true),                            
                             classRelevance(false),
                             trainingType("pseudolikelihood"),
                             inferenceMethod("LBP"),
-                            decodingMethod("AlphaExpansions")
+                            decodingMethod("AlphaExpansions"),
+                            optimizationMethod("LBFGS"),
+                            numOfRandomStarts(0),                            
+                            logTraining(false),
+                            iterationResolution(1000)
         {}
+    };
+
+    struct TTrainingLogEntry
+    {
+        double unLikelihood;
+        double gradientNorm;
+        double convergence; // gradientNorm / xNorm
+        double ellapsedTime;
+        int consumedData;
+    };
+
+    struct TTrainingLog
+    {
+        int iterationResolution;
+        vector<TTrainingLogEntry> entries;
     };
 
     class CTrainingDataSet
@@ -84,11 +135,13 @@ namespace UPGMpp
         std::map<CNodeTypePtr, Eigen::MatrixXi> m_nodeWeightsMap;
         std::map<CEdgeTypePtr,std::vector<Eigen::MatrixXi> > m_edgeWeightsMap;
         TTrainingOptions                        m_trainingOptions;
+        TTrainingLog                            m_trainingLog;
         double                                  m_executionTime;
+        double                                  m_evaluatingTime;
 
     public:
 
-        CTrainingDataSet(){}
+        CTrainingDataSet() : m_evaluatingTime(0), m_executionTime(0){}
 
         inline void setGroundTruth( std::vector<std::map<size_t,size_t> > &gt ) { m_groundTruth = gt; }
         inline void addGraphGroundTruth( std::map<size_t,size_t> &graph_gt ){ m_groundTruth.push_back( graph_gt ); }
@@ -97,6 +150,8 @@ namespace UPGMpp
                                         { m_trainingOptions = trainingOptions; }
         inline TTrainingOptions& getTrainingOptions()
                                         { return m_trainingOptions; }
+        inline TTrainingLog& getTrainingLog()
+                                        { return m_trainingLog; }
 
         inline std::vector<CGraph>& getGraphs(){ return m_graphs; }
         inline std::vector<CNodeTypePtr>& getNodeTypes(){ return m_nodeTypes; }
@@ -149,7 +204,11 @@ namespace UPGMpp
             m_classesRelevance[nodeType] = classesRelevance;
         }
 
+        /** Returns the execution time in seconds. */
         double getExecutionTime(){ return m_executionTime*pow(10,-9); }
+
+        /** Returns the time spent evaluating the current weights. */
+        double getEvaluatingTime(){ return m_evaluatingTime*pow(10,-9); }
 
 
         int train( const bool debug = false);
@@ -159,6 +218,18 @@ namespace UPGMpp
                                      double &fx,
                                      const double *x,
                                      double *g );
+
+        void updateScoreMatching( CGraph &graph,
+                                  std::map<size_t,size_t> &groundTruth,
+                                  double &fx,
+                                  const double *x,
+                                  double *g );
+
+        void updatePicewise( CGraph &graph,
+                             std::map<size_t,size_t> &groundTruth,
+                             double &fx,
+                             const double *x,
+                             double *g );
 
         void updateInference( CGraph &graph,
                               std::map<size_t,size_t> &groundTruth,

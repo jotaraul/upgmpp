@@ -521,7 +521,12 @@ namespace UPGMpp
             {
                 CNodePtr node = getNodeWithID( it->first );                
                 //unlikelihood *= node->getPotentials()(classes[node->getID()]);
-                unlikelihood += node->getPotentials()(it->second);
+                double potential = node->getPotentials()(it->second);
+
+                if (potential)
+                    unlikelihood += std::log(potential);
+                else
+                    unlikelihood += std::log(1e-10);
             }
 
             DEBUG("Computing edges likelihood...");
@@ -536,21 +541,28 @@ namespace UPGMpp
                 size_t IDNodeType1 = n1->getType()->getID();
                 size_t IDNodeType2 = n2->getType()->getID();
 
+                double potential;
+
                 // Check if the nodes share the same type.
                 if ( IDNodeType1 == IDNodeType2 )
                     // If they do, then the node with the lower id is the one appearing
                     // first in the edge;
                     if ( ID1 > ID2 )
                         //unlikelihood *= edge->getPotentials()(classes[ID2],classes[ID1]);
-                        unlikelihood += std::log(edge->getPotentials()(classes[ID2],classes[ID1]));
+                        potential = edge->getPotentials()(classes[ID2],classes[ID1]);
                     else
-                        unlikelihood += std::log(edge->getPotentials()(classes[ID1],classes[ID2]));
+                        potential = edge->getPotentials()(classes[ID1],classes[ID2]);
                 else
                     // If not, the node with the lower nodeType is the first
                     if ( IDNodeType1 > IDNodeType2 )
-                        unlikelihood += std::log(edge->getPotentials()(classes[ID2],classes[ID1]));
+                        potential = edge->getPotentials()(classes[ID2],classes[ID1]);
                     else
-                        unlikelihood += std::log(edge->getPotentials()(classes[ID1],classes[ID2]));
+                        potential = edge->getPotentials()(classes[ID1],classes[ID2]);
+
+                if (potential)
+                    unlikelihood += std::log(potential);
+                else
+                    unlikelihood += std::log(1e-10);
             }
 
             //unlikelihood = std::log( unlikelihood );

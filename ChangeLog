@@ -24,6 +24,10 @@ TODOs:
 - (2) Increment the debuging capabilities of the library.
 - (3) Better errors management.
 
+Beta 0.2 (-05-2016)
+- [TRAINING] Added new Stochastic Gradient Descent (SGD) method to traing UPGMs.
+- [INFERENCE] Reviewed LBP inference.
+
 Beta 0.1 (23-04-2015)
 - [INFERENCE] Inference and decoding methods renamed to more coherent titles: Inference -> Inference_marginal and Decoding -> Inference_MAP.
 - [INFERECE/TRAINING] Added time execution measurements.

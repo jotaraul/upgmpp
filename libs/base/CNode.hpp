@@ -283,8 +283,8 @@ namespace UPGMpp
         {
             output << "ID: " << n.getID() << std::endl;
             output << "Label: " << n.getLabel() << std::endl;
-            output << "Features: " << n.getFeatures() << std::endl;
-            output << "Potentials: " << n.getPotentials() << std::endl;
+            output << "Features: " << n.getFeatures().transpose() << std::endl;
+            output << "Potentials: " << n.getPotentials().transpose() << std::endl;
 
             return output;
         }
