@@ -208,6 +208,8 @@ static lbfgsfloatval_t evaluate(
 
     TTrainingOptions &to = td->getTrainingOptions();
 
+    omp_set_dynamic(0);
+    omp_set_num_threads( to.numberOfThreads );
 #pragma omp parallel for reduction(+:fx) if(to.parallelize)
 
     for ( size_t dataset = 0; dataset < N_graphs; dataset++ )
@@ -1390,14 +1392,14 @@ void CTrainingDataSet::updatePicewise( CGraph &graph,
                                        lbfgsfloatval_t *g )
 {
     //cout << "[STATUS] Updating function value and grandients! Graph: " << graph.getID() << endl;
+
     vector<CEdgePtr> &edges = graph.getEdges();
 
     vector<CEdgePtr>::iterator itEdges;
 
-    cout << "N_edges: " << edges.size() << endl;
+    //cout << "N_edges: " << edges.size() << endl;
 
-    // Computet the probability of each class of each node while their neighbors
-    // take a fixed value
+    // Iterate over all the edges
     for ( itEdges = edges.begin(); itEdges != edges.end(); itEdges++ )
     {
         CEdgePtr edge = *itEdges;
@@ -1459,7 +1461,7 @@ void CTrainingDataSet::updatePicewise( CGraph &graph,
 
         nodeBel = potentials.colwise().sum()/Z;
 
-        VectorXd &feat2 = n1->getFeatures();
+        VectorXd &feat2 = n2->getFeatures();
 
         for ( size_t class_j = 0; class_j < N_classes2; class_j++)
         {
@@ -1510,7 +1512,7 @@ void CTrainingDataSet::updatePicewise( CGraph &graph,
                     }
                 }
 
-    cout << "Fx: " << fx << endl;
+    //cout << "Fx: " << fx << endl;
 
 
 }

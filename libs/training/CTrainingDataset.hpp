@@ -81,6 +81,7 @@ namespace UPGMpp
         bool            parallelize; // Parallelize training? OMP must has been enabled
         bool            logTraining;
         int             iterationResolution;
+        int             numberOfThreads; // Used in LBFGS
         TSGDOptions     sgd;
         std::string     trainingType;
         std::string     inferenceMethod;
@@ -103,7 +104,8 @@ namespace UPGMpp
                             optimizationMethod("LBFGS"),
                             numOfRandomStarts(0),                            
                             logTraining(false),
-                            iterationResolution(1000)
+                            iterationResolution(1000),
+                            numberOfThreads(1)
         {}
     };
 
