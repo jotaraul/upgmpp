@@ -680,7 +680,7 @@ int sgd( int N_weights, lbfgsfloatval_t *x, void *instance )
     }
 
     // Release memory
-    //z
+    //
     lbfgs_free(g);
     lbfgs_free(pastIncrements);
     if ( to.sgd.updateMethod == "adaptative" ) lbfgs_free(outerProductDiag);
@@ -1218,6 +1218,13 @@ void CTrainingDataSet::updatePseudolikelihood( CGraph &graph,
 
 }
 
+
+/*------------------------------------------------------------------------------
+
+                            updateScoreMatching
+
+------------------------------------------------------------------------------*/
+
 void CTrainingDataSet::updateScoreMatching( CGraph &graph,
                                             std::map<size_t,size_t> &groundTruth,
                                             lbfgsfloatval_t &fx,
@@ -1229,8 +1236,6 @@ void CTrainingDataSet::updateScoreMatching( CGraph &graph,
 
     vector<CNodePtr>::iterator itNodes;
 
-    // Computet the probability of each class of each node while their neighbors
-    // take a fixed value
     for ( itNodes = nodes.begin(); itNodes != nodes.end(); itNodes++ )
     {
         CNodePtr node = *itNodes;
@@ -1312,7 +1317,7 @@ void CTrainingDataSet::updateScoreMatching( CGraph &graph,
                         if ( class_j == class_i )
                             value = 2*(nodeBel(class_i)-ok)*features(feature)*(potentials(class_i)/Z-pow(potentials(class_i),2)/pow(Z,2));
                         else
-                            value = -2*(nodeBel(class_j)-ok2)*features(feature)*potentials(class_i)*potentials(class_j)/pow(Z,2);
+                            value = -2*(nodeBel(class_j)-ok2)*features(feature)*potentials(class_i)*(potentials(class_j)/pow(Z,2));
  #pragma omp atomic
                         g[index] += value;
                     }
@@ -1380,10 +1385,17 @@ void CTrainingDataSet::updateScoreMatching( CGraph &graph,
         }
     }
 
-    cout << "Fx: " << fx << endl;
+    //cout << "Fx: " << fx << endl;
     //cout << "[STATUS] Function value and gradients updated!" << endl;
 
 }
+
+
+/*------------------------------------------------------------------------------
+
+                             updatePicewise
+
+------------------------------------------------------------------------------*/
 
 void CTrainingDataSet::updatePicewise( CGraph &graph,
                                        std::map<size_t,size_t> &groundTruth,

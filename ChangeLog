@@ -23,9 +23,14 @@ TODOs:
 - (1) Add unit test cases.
 - (2) Increment the debuging capabilities of the library.
 - (3) Better errors management.
+- (4) Review RBP and picewise training.
 
-Beta 0.2 (-05-2016)
-- [TRAINING] Added new Stochastic Gradient Descent (SGD) method to traing UPGMs.
+Beta 0.3 (30-05-2016)
+- [TRAINING] Added Picewise and Score-Matching objective functions.
+- [TRAINING] Added different SGD methods for updating the weights: Momentum, Scheduled, Adaptative, and Meta-descent.
+
+Beta 0.2 (10-05-2016)
+- [TRAINING] Added new Stochastic Gradient Descent (SGD) method to train UPGMs.
 - [INFERENCE] Reviewed LBP inference.
 
 Beta 0.1 (23-04-2015)
