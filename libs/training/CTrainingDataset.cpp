@@ -338,7 +338,7 @@ static int progress(
 
 ------------------------------------------------------------------------------*/
 
-int sgd( int N_weights, lbfgsfloatval_t *x, void *instance )
+int sgd( int N_weights, lbfgsfloatval_t *x, void *instance, bool debug )
 {
     using namespace UPGMpp;
     CTrainingDataSet *td = static_cast<UPGMpp::CTrainingDataSet*>(instance);
@@ -402,6 +402,8 @@ int sgd( int N_weights, lbfgsfloatval_t *x, void *instance )
 
     while ( iter < maxIter && !convergence )
     {
+        DEBUGD("Doing iteration ", iter);
+
         boost::posix_time::ptime time_1(boost::posix_time::microsec_clock::local_time());
 
         // Resent gradients
@@ -438,18 +440,37 @@ int sgd( int N_weights, lbfgsfloatval_t *x, void *instance )
         #pragma omp parallel for if(to.parallelize) //num_threads(4)
         for ( size_t evaluation = 0; evaluation < to.sgd.evaluationsPerStep; evaluation++ )
         {
-            int graph = std::rand() % N_graphs;
+            int graph;
+
+            if ( to.sgd.samplePicking == "random" )
+                graph = std::rand() % N_graphs;
+            else if ( to.sgd.samplePicking == "sequential" )
+            {
+                graph = iter % N_graphs;
+                if (to.parallelize)
+                {
+                    graph *= omp_get_num_threads();
+                    graph += omp_get_thread_num();
+                }
+            }
+            else
+                cerr << "  [ERROR] Unkown sample picking strategy in SGD: "
+                     << to.sgd.samplePicking << endl;
 
             // Compute the function value
 
             boost::posix_time::ptime time_2(boost::posix_time::microsec_clock::local_time());
 
+            DEBUG("  Computing graph potentials");
+
             graphs[graph].computePotentials();
+
+            DEBUG("  Updating gradients")
 
             if ( to.trainingType == "pseudolikelihood" )
                 td->updatePseudolikelihood( graphs[graph], groundTruth[graph], fx, x, g );
             else if ( to.trainingType == "scoreMatching")
-                td->updatePseudolikelihood( graphs[graph], groundTruth[graph], fx, x, g );
+                td->updateScoreMatching( graphs[graph], groundTruth[graph], fx, x, g );
             else if ( to.trainingType == "picewise")
                 td->updatePicewise( graphs[graph], groundTruth[graph], fx, x, g );
             else if ( to.trainingType == "inference" )
@@ -479,6 +500,8 @@ int sgd( int N_weights, lbfgsfloatval_t *x, void *instance )
 
         // Update parameters
         //
+
+        DEBUG("  Updating parameters");
 
         for ( size_t j = 1; j < N_weights; j++ )
         {
@@ -561,7 +584,7 @@ int sgd( int N_weights, lbfgsfloatval_t *x, void *instance )
 
         // Show trainig process
         //
-        if ( !(iter%1000) )
+        if ( !(iter%2000) )
         {
             //if ( to.showTrainingProgress  )
             {
@@ -600,7 +623,7 @@ int sgd( int N_weights, lbfgsfloatval_t *x, void *instance )
             if (isinf(unLike))
                 v_unLikelihoods.push_back(v_unLikelihoods[v_unLikelihoods.size()-1]);
             else
-                v_unLikelihoods.push_back(unLike);
+                v_unLikelihoods.push_back(unLike);            
 
             if (( unLikelihoodTop < unLike ) && !isinf(unLike))
             {
@@ -610,9 +633,13 @@ int sgd( int N_weights, lbfgsfloatval_t *x, void *instance )
             }
         }
 
-        if (iterCount>(to.sgd.checkConvergencyEach))
+        if ( iterCount && (iterCount>to.sgd.checkConvergencyEach))
         {
-            size_t index = iterCount / (int)(to.sgd.checkConvergencyEach/to.sgd.storeProgressEach);
+            size_t index = iterCount / to.sgd.storeProgressEach;
+//            cout << "Iter count: " << iterCount << " index: " << index << " size:  " << v_unLikelihoods.size() << endl;
+//            for ( size_t i =0; i < v_unLikelihoods.size(); i++ )
+//                cout << v_unLikelihoods[i] << " " << endl;
+//            cout << "Current: " << v_unLikelihoods.at(index) << endl;
 
             if ((v_unLikelihoods[index] < v_unLikelihoods[index-(int)(to.sgd.checkConvergencyEach/to.sgd.storeProgressEach)])
                      || isinf(v_unLikelihoods[index]) || isinf(gNorm) )
@@ -861,7 +888,7 @@ int CTrainingDataSet::train( const bool debug )
         //cout << *m_edgeTypes[i] << endl;
     }
 
-    cout << "Number of weights " << N_weights << endl;
+    //cout << "Number of weights " << N_weights << endl;
     DEBUGD("Number of weights ",N_weights);
 
     //
@@ -919,9 +946,10 @@ int CTrainingDataSet::train( const bool debug )
     if ( m_trainingOptions.optimizationMethod == "LBFGS" ||
          m_trainingOptions.optimizationMethod == "hybrid" )
     {
+        DEBUG("Performing LBFGS optimization...");
 
         if (m_trainingOptions.optimizationMethod == "hybrid")
-            sgd(N_weights, x, this );
+            sgd(N_weights, x, this, debug );
 
         DEBUG("Initializing parameters...");
 
@@ -987,7 +1015,9 @@ int CTrainingDataSet::train( const bool debug )
     }
     else if ( m_trainingOptions.optimizationMethod == "SGD" )
     {
-        sgd(N_weights, x, this );
+        DEBUG("Performing SGD optimization...");
+
+        sgd(N_weights, x, this, debug );
     }
 
     if ( m_trainingOptions.showTrainedWeights )
@@ -1582,14 +1612,15 @@ void CTrainingDataSet::updateInference( CGraph &graph,
     boost::posix_time::ptime time_1(boost::posix_time::microsec_clock::local_time());
 
     // Update objective funciton value!!!
-    fx = fx - graph.getUnnormalizedLogLikelihood(groundTruth) + logZ;
+    fx = fx - graph.getUnnormalizedLogLikelihood(groundTruth,false) + logZ;
 
-    //        cout << "post fx: " << fx << endl;
+//            cout << "post fx: " << fx << endl;
 
     // Update gradient
 
     //cout << "****************************************" << endl;
     //cout << "Node bel      : " << nodeBel.transpose() << endl;
+
 
     vector<CNodePtr> &v_nodes = graph.getNodes();
     size_t           N_nodes  = v_nodes.size();
@@ -1703,7 +1734,7 @@ void CTrainingDataSet::updateInference( CGraph &graph,
 
 /*------------------------------------------------------------------------------
 
-                            updateInference
+                            updaterDecoding
 
 ------------------------------------------------------------------------------*/
 

@@ -345,15 +345,15 @@ void CTRPBPInferenceMarginal::infer(CGraph &graph,
         if ( tree.size() )
             v_trees.push_back( tree );
 
-        cout << "Tree: ";
+//        cout << "Tree: ";
 
         for ( size_t i_node = 0; i_node < tree.size(); i_node++ )
         {
             v_addedNodes[ addedNodesMap[tree[i_node]] ] = true;
-            cout << tree[i_node] << " ";
+//            cout << tree[i_node] << " ";
         }
 
-        cout << endl;
+//        cout << endl;
 
         for ( size_t i_node = 0; i_node < N_nodes; i_node++ )
             if ( !v_addedNodes[i_node] )

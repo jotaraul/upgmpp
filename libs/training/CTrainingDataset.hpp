@@ -53,6 +53,7 @@ namespace UPGMpp
         double          momentum_alpha;
         double          metaDescent_mu;
         double          metaDescent_lambda;
+        std::string     samplePicking; // "random", "sequential"
 
         TSGDOptions() : evaluationsPerStep(1),
                         stepSize(1e-4),
@@ -62,7 +63,8 @@ namespace UPGMpp
                         checkConvergencyEach(1000),
                         momentum_alpha(0.1),
                         metaDescent_mu(0.1),
-                        metaDescent_lambda(0.8)
+                        metaDescent_lambda(0.8),
+                        samplePicking("random")
 
         {}
     };

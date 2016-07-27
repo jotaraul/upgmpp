@@ -225,7 +225,7 @@ namespace UPGMpp
          * \param edgeID: ID of the edge.
          * \return Position of that object in the edges vector.
          */
-        size_t getEdgeIndex ( size_t edgeID )
+        int getEdgeIndex ( size_t edgeID )
         {
             for ( size_t i = 0; i < m_edges.size(); i++ )
                 if ( edgeID == m_edges[i]->getID() )
@@ -519,7 +519,7 @@ namespace UPGMpp
 
             for ( it = classes.begin(); it != classes.end(); it++ )
             {
-                CNodePtr node = getNodeWithID( it->first );                
+                CNodePtr node = getNodeWithID( it->first );
                 //unlikelihood *= node->getPotentials()(classes[node->getID()]);
                 double potential = node->getPotentials()(it->second);
 
