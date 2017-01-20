@@ -3,8 +3,8 @@
  |                               UPGM++                                      |
  |                   Undirected Graphical Models in C++                      |
  |                                                                           |
- |              Copyright (C) 2014 Jose Raul Ruiz Sarmiento                  |
- |                 University of Malaga (jotaraul@uma.es)                    | 
+ |          Copyright (C) 2014-2017 Jose Raul Ruiz Sarmiento                 |
+ |                 University of Malaga (jotaraul@uma.es)                    |
  |                                                                           |
  |   This program is free software: you can redistribute it and/or modify    |
  |   it under the terms of the GNU General Public License as published by    |

@@ -49,6 +49,7 @@ namespace UPGMpp
         int             evaluationsPerStep;
         std::string     updateMethod;
         double          storeProgressEach;
+        double          checkConvergencyFrom;
         double          checkConvergencyEach;
         double          momentum_alpha;
         double          metaDescent_mu;
@@ -60,6 +61,7 @@ namespace UPGMpp
                         gradientDiffToConverge(1e-12),
                         updateMethod("standard"),
                         storeProgressEach(10),
+                        checkConvergencyFrom(1000),
                         checkConvergencyEach(1000),
                         momentum_alpha(0.1),
                         metaDescent_mu(0.1),

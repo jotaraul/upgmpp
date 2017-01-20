@@ -633,7 +633,7 @@ int sgd( int N_weights, lbfgsfloatval_t *x, void *instance, bool debug )
             }
         }
 
-        if ( iterCount && (iterCount>to.sgd.checkConvergencyEach))
+        if ( iterCount && (iterCount>to.sgd.checkConvergencyFrom))
         {
             size_t index = iterCount / to.sgd.storeProgressEach;
 //            cout << "Iter count: " << iterCount << " index: " << index << " size:  " << v_unLikelihoods.size() << endl;
