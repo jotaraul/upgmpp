@@ -291,6 +291,7 @@ namespace UPGMpp
         friend std::ostream& operator<<(std::ostream& output, const CEdge& e)
         {
             output << "Edge ID:" << e.getID() << std::endl;
+            output << "Type: " << e.getType()->getLabel() << std::endl;
             CNodePtr n1, n2;
             e.getNodes( n1, n2);
 

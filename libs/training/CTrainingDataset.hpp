@@ -168,7 +168,31 @@ namespace UPGMpp
             {return m_edgeWeightsMap[edgeType]; }
         inline std::vector<std::map<size_t,size_t> >& getGroundTruth(){ return m_groundTruth; }
 
-        inline void addGraph( CGraph &graph ){ m_graphs.push_back( graph ); }
+        void addGraph( CGraph &graph )
+        {
+            // Frist check that all the node types in the graph have been added to the training dataset
+            std::vector<CNodeTypePtr> v_nodeTypes = graph.getNodeTypes();
+
+            bool found = true;
+            size_t i = 0;
+
+            while ( found && (i < v_nodeTypes.size() ) )
+            {
+                size_t j = 0;
+                while ( (j < m_nodeTypes.size()) &&  v_nodeTypes[i]->getID() != m_nodeTypes[j]->getID() )
+                    j++;
+
+                if ( j == m_nodeTypes.size() )
+                    found = false;
+
+                i++;
+            }
+
+            if ( !found )
+                cerr << "  [ERROR] Included a graph with node types that have not been included in the training dataset" << endl;
+
+            m_graphs.push_back( graph );
+        }
 
         void addNodeType( CNodeTypePtr nodeType )
         {

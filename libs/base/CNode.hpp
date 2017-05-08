@@ -282,6 +282,7 @@ namespace UPGMpp
         friend std::ostream& operator<<(std::ostream& output, const CNode& n)
         {
             output << "ID: " << n.getID() << std::endl;
+            output << "Type: " << n.getType()->getLabel() << std::endl;
             output << "Label: " << n.getLabel() << std::endl;
             output << "Features: " << n.getFeatures().transpose() << std::endl;
             output << "Potentials: " << n.getPotentials().transpose() << std::endl;
