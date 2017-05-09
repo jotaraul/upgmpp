@@ -208,8 +208,11 @@ static lbfgsfloatval_t evaluate(
 
     TTrainingOptions &to = td->getTrainingOptions();
 
+#ifdef UPGMPP_USING_OMPENMP
     omp_set_dynamic(0);
     omp_set_num_threads( to.numberOfThreads );
+#endif
+
 #pragma omp parallel for reduction(+:fx) if(to.parallelize)
 
     for ( size_t dataset = 0; dataset < N_graphs; dataset++ )
@@ -435,8 +438,10 @@ int sgd( int N_weights, lbfgsfloatval_t *x, void *instance, bool debug )
 
         lbfgsfloatval_t fx = 0.0;
 
+#ifdef UPGMPP_USING_OMPENMP
         omp_set_dynamic(0);
         omp_set_num_threads( (to.sgd.evaluationsPerStep>8) ? 8 : to.sgd.evaluationsPerStep );
+#endif
         #pragma omp parallel for if(to.parallelize) //num_threads(4)
         for ( size_t evaluation = 0; evaluation < to.sgd.evaluationsPerStep; evaluation++ )
         {
@@ -449,8 +454,10 @@ int sgd( int N_weights, lbfgsfloatval_t *x, void *instance, bool debug )
                 graph = iter % N_graphs;
                 if (to.parallelize)
                 {
+#ifdef UPGMPP_USING_OMPENMP
                     graph *= omp_get_num_threads();
                     graph += omp_get_thread_num();
+#endif
                 }
             }
             else
@@ -1961,9 +1968,10 @@ void CTrainingDataSet::updateDecoding( CGraph &graph,
         size_t ID1 = node1Ptr->getID();
         size_t ID2 = node2Ptr->getID();
 
-
+//#ifdef UPGMPP_USING_OMPENMP
 //        omp_set_dynamic(0);
 //        omp_set_num_threads(4);
+//#endif
 //#pragma omp parallel for //num_threads(4)
         for ( size_t state1 = 0; state1 < N_classes1; state1++ )
             for (size_t state2 = 0; state2 < N_classes2; state2++ )

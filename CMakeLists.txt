@@ -55,10 +55,10 @@ set(UPGMpp_USING_OMPENMP "FALSE" CACHE BOOL
   "Check if you want to parallelize some parts of the code using OpenMP.")
 
 IF (UPGMpp_USING_OMPENMP)
-
+	MESSAGE("Using OpenMP")
+	add_definitions(-DUPGMpp_USING_OMPENMP)
 	find_package(OpenMP REQUIRED)
         set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${OpenMP_CXX_FLAGS}")
-
 ENDIF (UPGMpp_USING_OMPENMP)
 
 
