@@ -76,7 +76,7 @@ void CICMInferenceMAP::infer( CGraph &graph, std::map<size_t,size_t> &results, b
 {
     TIMER_START
 
-    //cout << "Satarting ICM decoding..." << endl;
+    DEBUG("Satarting ICM decoding...");
 
     if ( graph.isEmpty() )
         return;
@@ -118,6 +118,8 @@ void CICMInferenceMAP::infer( CGraph &graph, std::map<size_t,size_t> &results, b
     // Let's go!
     while ( (keep_iterating) && ( iteration <= m_options.maxIterations ) )
     {
+        DEBUGD("Iteration: ", iteration);
+
         bool changes = false;
 
         // Iterate over all the nodes, and check if a more promissing class
@@ -1049,7 +1051,7 @@ void CAlphaExpansionInferenceMAP::infer( CGraph &graph,
 
         for ( itNodeTypes = nodeTypes.begin(); itNodeTypes != nodeTypes.end(); itNodeTypes++)
         {
-            size_t nodeTypeID = (*itNodeTypes)->getID();            
+            size_t nodeTypeID = (*itNodeTypes)->getID();
             size_t N_classes  = (*itNodeTypes)->getNumberOfClasses();
 
             //
@@ -1061,7 +1063,7 @@ void CAlphaExpansionInferenceMAP::infer( CGraph &graph,
             for ( size_t state = 0; state < N_classes; state++ )
             {
                 stringstream ss;
-                ss << "Expanding state " << state << " in nodes of type " << nodeTypeID << endl;
+                ss << "Expanding state " << state << " in nodes of type " << nodeTypeID << " with label " << (*itNodeTypes)->getLabel() << endl;
                 DEBUG(ss.str());
 
                 map<size_t,size_t>  nodesToBind;
@@ -1118,6 +1120,8 @@ void CAlphaExpansionInferenceMAP::infer( CGraph &graph,
                 CEdgeTypePtr binaryEdgeTypePtr( new CEdgeType(1,binaryNodeTypePtr,
                                                               binaryNodeTypePtr) );
 
+                 DEBUG("...nodes...")
+
                 vector<CNodePtr> &boundNodes = boundGraph.getNodes();
 
                 for  (size_t node = 0; node < boundNodes.size(); node++ )
@@ -1148,6 +1152,8 @@ void CAlphaExpansionInferenceMAP::infer( CGraph &graph,
 
                 // ... and binary edges
 
+                 DEBUG("...and edges!")
+
                 vector<CEdgePtr> &boundEdges = boundGraph.getEdges();
 
                 for ( size_t edge = 0; edge < boundEdges.size(); edge++ )
@@ -1171,7 +1177,15 @@ void CAlphaExpansionInferenceMAP::infer( CGraph &graph,
                     }
                     else // Different node types
                     {
-                        if ( nodePtr1->getType()->getID() != nodeTypeID)
+                        if ( ( nodePtr1->getType()->getID() != nodeTypeID) &&
+                                ( nodePtr2->getType()->getID() != nodeTypeID) ) // Both types are different to the current one
+                        {
+                            binaryPotentials(0,0) = 0;
+                            binaryPotentials(0,1) = 0;
+                            binaryPotentials(1,0) = 0;
+                            binaryPotentials(1,1) = 0;
+                        }
+                        else if ( nodePtr1->getType()->getID() != nodeTypeID)
                         {
                             binaryPotentials(0,0) = 0;
                             binaryPotentials(0,1) = 0;
@@ -1187,7 +1201,6 @@ void CAlphaExpansionInferenceMAP::infer( CGraph &graph,
                             binaryPotentials(1,1) = potentials( assignation[nodePtr1->getID()],
                                                                 assignation[nodePtr2->getID()] );
                         }
-
                     }
 
                     // Check if the user wants to truncate supermodular
