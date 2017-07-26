@@ -15,12 +15,12 @@ ROS wrapper repository: https://github.com/MAPIRlab/upgmpp_wrapper
 
 If you use UPGM++, please cite us by:
 
-`@INPROCEEDINGS{Ruiz-Sarmiento-REACTS-2015,
-author = {Ruiz-Sarmiento, J. R. and Galindo, Cipriano and Gonz{\'{a}}lez-Jim{\'{e}}nez, Javier},
-title = {UPGMpp: a Software Library for Contextual Object Recognition},
-booktitle = {3rd. Workshop on Recognition and Action for Scene Understanding (REACTS)},
-year = {2015}
-}`
+> @INPROCEEDINGS{Ruiz-Sarmiento-REACTS-2015,  <br/>
+> author = {Ruiz-Sarmiento, J. R. and Galindo, Cipriano and Gonz{\'{a}}lez-Jim{\'{e}}nez, Javier},  <br/>
+> title = {UPGMpp: a Software Library for Contextual Object Recognition},  <br/>
+> booktitle = {3rd. Workshop on Recognition and Action for Scene Understanding (REACTS)},  <br/>
+> year = {2015}  <br/>
+> }
 
 General information
 -------------------
