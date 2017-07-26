@@ -11,6 +11,8 @@ Personal webpage: http://mapir.isa.uma.es/jotaraul
 
 Project webpage: http://mapir.isa.uma.es/work/upgmpp-library
 
+ROS wrapper repository: https://github.com/MAPIRlab/upgmpp_wrapper
+
 If you use UPGM++, please cite us by:
 
 `@INPROCEEDINGS{Ruiz-Sarmiento-REACTS-2015,
@@ -23,7 +25,7 @@ year = {2015}
 General information
 -------------------
 
-This is a standalone C++ library for Undirected Probabilistic Graphical Models. Some examples are provided for a better understanding of the library use.
+This is a standalone C++ library for Undirected Probabilistic Graphical Models. Some examples are provided for a better understanding of the library use. <strong>NEW!</strong> A ROS wrapper is now available [here](https://github.com/MAPIRlab/upgmpp_wrapper).
 
 I want to thank Prof. Dr. Joachim Hertzberg and Mr. Martin Günther for the motivation and support that they gave me in the first steps of this library, which was started during my stay at the University of Osnabrück, Germany.
 
