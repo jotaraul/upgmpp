@@ -49,22 +49,23 @@ using namespace std;
 
 namespace boost
 {
-template<class Archive, typename _Scalar, int _Rows, int _Cols, int _Options, int _MaxRows, int _MaxCols>
-inline void serialize(
-    Archive & ar,
-    Matrix<_Scalar, _Rows, _Cols, _Options, _MaxRows, _MaxCols> & t,
-    const unsigned int file_version
-)
-{
-    size_t rows = t.rows(), cols = t.cols();
-    ar & rows;
-    ar & cols;
-    if( (unsigned int)(rows * cols) != t.size() )
-    t.resize( rows, cols );
+    namespace serialization{
+        template<class Archive, typename _Scalar, int _Rows, int _Cols, int _Options, int _MaxRows, int _MaxCols>
+        inline void serialize(
+            Archive & ar,
+            Matrix<_Scalar, _Rows, _Cols, _Options, _MaxRows, _MaxCols> & t,
+            const unsigned int file_version)
+        {
+        size_t rows = t.rows(), cols = t.cols();
+        ar & rows;
+        ar & cols;
+        if( (unsigned int)(rows * cols) != t.size() )
+        t.resize( rows, cols );
 
-    for(unsigned int i=0; i<t.size(); i++)
-    ar & t.data()[i];
-}
+        for(unsigned int i=0; i<t.size(); i++)
+            ar & t.data()[i];
+        }
+    }
 }
 
 namespace UPGMpp
