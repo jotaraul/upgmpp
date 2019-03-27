@@ -14,10 +14,6 @@
 PROJECT(UPGMplusplus)
 SET(PROJECT_NAME "UPGMplusplus")
 
-if(COMMAND cmake_policy)
-	cmake_policy(SET CMP0005 OLD)
-endif(COMMAND cmake_policy)
-
 # Required commands in newer CMake versions:
 CMAKE_MINIMUM_REQUIRED(VERSION 2.4)
 if(COMMAND cmake_policy)
