@@ -181,6 +181,10 @@ namespace UPGMpp
 
         }
 
+        /**	Reset weights to 0.
+          */
+        void resetWeights(){ m_weights.fill( 0 ); }
+
         /**	Get the matrix of weights.
           * \return A copy of the matrix of weights.
           */
@@ -190,7 +194,6 @@ namespace UPGMpp
           * \return A reference to the matrix of weights.
           */
         inline Eigen::MatrixXd& getWeights(){ return m_weights; }
-
 
         /** Get the number of classes (states) of nodes of this type.
          * \return Number of classes.

@@ -234,6 +234,18 @@ namespace UPGMpp
             m_weights[feature](row,col) = weight;
         }
 
+        /**	Reset weights to 0.
+        */
+        void resetWeights()
+        {
+            for ( size_t i = 0; i < m_nFeatures; i++ )
+            {
+                m_weights[i].resize( m_nodeType1->getNumberOfClasses(),
+                                     m_nodeType2->getNumberOfClasses() );
+                m_weights[i].fill( 0 );
+            }
+        }
+
         /** Returns the vector of matrices of weights.
          * \return A reference to the vector.
          */
