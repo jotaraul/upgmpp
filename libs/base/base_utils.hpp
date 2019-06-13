@@ -35,9 +35,9 @@
 using namespace Eigen;
 using namespace std;
 
-#define DEBUG(m) if(debug) cout << m << endl;
+#define DEBUG(m) if(debug) cout << m << endl << std::flush;
 
-#define DEBUGD(m,d) if(debug) cout << m << d << endl;
+#define DEBUGD(m,d) if(debug) cout << m << d << endl << std::flush;
 
 #define ITERATE_SIZE_T(vector) for ( size_t i = 0; i < vector.size(); i++ )
 

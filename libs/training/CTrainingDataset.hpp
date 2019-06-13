@@ -91,7 +91,8 @@ namespace UPGMpp
         std::string     inferenceMethod;
         std::string     decodingMethod;
         std::string     optimizationMethod;
-        std::vector<double>  lambda;        
+        std::vector<double>  lambda;
+        bool            continueTraining; // if we don't want to reset the weights
 
         TTrainingOptions(): showTrainingProgress(true),
                             showTrainedWeights(false),
@@ -109,7 +110,8 @@ namespace UPGMpp
                             numOfRandomStarts(0),                            
                             logTraining(false),
                             iterationResolution(1000),
-                            numberOfThreads(1)
+                            numberOfThreads(1),
+                            continueTraining(false)
         {}
     };
 
@@ -144,13 +146,15 @@ namespace UPGMpp
         TTrainingLog                            m_trainingLog;
         double                                  m_executionTime;
         double                                  m_evaluatingTime;
+        double                                  *m_x;
 
     public:
 
-        CTrainingDataSet() : m_evaluatingTime(0), m_executionTime(0){}
+        CTrainingDataSet() : m_evaluatingTime(0), m_executionTime(0), m_x(0){}
 
         inline void setGroundTruth( std::vector<std::map<size_t,size_t> > &gt ) { m_groundTruth = gt; }
         inline void addGraphGroundTruth( std::map<size_t,size_t> &graph_gt ){ m_groundTruth.push_back( graph_gt ); }
+        inline void clearGroundTruth(){ m_groundTruth.clear(); }
 
         inline void setTrainingOptions( const TTrainingOptions &trainingOptions)
                                         { m_trainingOptions = trainingOptions; }
@@ -163,7 +167,11 @@ namespace UPGMpp
         inline std::vector<CNodeTypePtr>& getNodeTypes(){ return m_nodeTypes; }
         inline std::vector<CEdgeTypePtr>& getEdgeTypes(){ return m_edgeTypes; }
         inline Eigen::MatrixXi& getCertainNodeWeightsMap( CNodeTypePtr nodeType )
-            {return m_nodeWeightsMap[nodeType]; }
+        {
+            if (!m_nodeWeightsMap.empty())
+                return m_nodeWeightsMap[nodeType];
+
+        }
         inline std::vector<Eigen::MatrixXi>& getCertainEdgeWeightsMap( CEdgeTypePtr edgeType )
             {return m_edgeWeightsMap[edgeType]; }
         inline std::vector<std::map<size_t,size_t> >& getGroundTruth(){ return m_groundTruth; }
@@ -193,6 +201,8 @@ namespace UPGMpp
 
             m_graphs.push_back( graph );
         }
+
+        void clearGraphs(){ m_graphs.clear(); }
 
         void addNodeType( CNodeTypePtr nodeType )
         {

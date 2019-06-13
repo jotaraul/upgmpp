@@ -78,7 +78,6 @@ void updateEdgeTypeWeights( std::vector<Eigen::MatrixXi>& edgeWeightsMap,
                 weights[feature](row,col) = x[edgeWeightsMap[feature](row,col)];
             }
     }
-
 }
 
 
@@ -356,7 +355,7 @@ int sgd( int N_weights, lbfgsfloatval_t *x, void *instance, bool debug )
     // Initialize gradients
     lbfgsfloatval_t *g    = lbfgs_malloc(N_weights);
     lbfgsfloatval_t *xTop = lbfgs_malloc(N_weights);
-    double unLikelihoodTop = 0;
+    double unLikelihoodTop = std::numeric_limits<double>::lowest();
     vector<double> v_unLikelihoods;
     lbfgsfloatval_t *pastIncrements = lbfgs_malloc(N_weights);
     lbfgsfloatval_t *outerProductDiag;
@@ -656,7 +655,12 @@ int sgd( int N_weights, lbfgsfloatval_t *x, void *instance, bool debug )
                 for ( size_t i = 0; i < N_weights; i++ )
                     x[i] = xTop[i];
 
-                cout << "Convergence achieved!!! likelihood " << v_unLikelihoods[index] << " replaced by " << unLikelihoodTop << endl;
+                if (v_unLikelihoods[index] < v_unLikelihoods[index-(int)(to.sgd.checkConvergencyEach/to.sgd.storeProgressEach)])
+                    cout << "Convergence achieved!!! likelihood " << v_unLikelihoods[index] << " replaced by " << unLikelihoodTop << endl;
+                else if (isinf(v_unLikelihoods[index]))
+                    cout << "Infinite value of likelihood found!!! likelihood " << v_unLikelihoods[index] << " replaced by " << unLikelihoodTop << endl;
+                else if (isinf(gNorm))
+                    cout << "Infinite value of gNorm found!!! likelihood " << v_unLikelihoods[index] << " replaced by " << unLikelihoodTop << endl;
             }
         }
 
@@ -752,13 +756,18 @@ int CTrainingDataSet::train( const bool debug )
 
     TIMER_START
 
-            DEBUG("Preparing weights of the different node types...");
+    DEBUG("Preparing weights of the different node types...")
 
     N_weights = 1;
     for ( size_t i = 0; i < m_nodeTypes.size(); i++ )
     {
         size_t N_cols = m_nodeTypes[i]->getWeights().cols();
         size_t N_rows = m_nodeTypes[i]->getWeights().rows();
+
+        if ( N_cols == 0 )
+            // No features in this node type, probably due to handcoded potentials
+            continue;
+
 
         Eigen::MatrixXi weightsMap;
         weightsMap.resize( N_rows, N_cols );
@@ -841,7 +850,6 @@ int CTrainingDataSet::train( const bool debug )
                 size_t N_cols = m_edgeTypes[i]->getWeights()[feature].cols();
                 size_t N_rows = m_edgeTypes[i]->getWeights()[feature].rows();
 
-
                 Eigen::MatrixXi weightsMap;
                 weightsMap.resize( N_rows, N_cols );
 
@@ -886,8 +894,8 @@ int CTrainingDataSet::train( const bool debug )
                 N_weights += N_rows;
             }
 
-            //cout << "Map for feature" << feature << endl;
-            //cout << v_weightsMap[feature] << endl;
+//            cout << "Map for feature" << feature << endl;
+//            cout << v_weightsMap[feature] << endl;
         }
 
         m_edgeWeightsMap[m_edgeTypes[i]] = v_weightsMap;
@@ -903,10 +911,24 @@ int CTrainingDataSet::train( const bool debug )
     //
 
     // Initialize weights
-    lbfgsfloatval_t *x = lbfgs_malloc(N_weights);
-
-    for ( size_t i = 0; i < N_weights; i++ )
-        x[i] = 0;
+    lbfgsfloatval_t *x;
+    if ( !m_x )
+    {
+        m_x = lbfgs_malloc(N_weights);
+        x = (lbfgsfloatval_t*)m_x;
+        for ( size_t i = 0; i < N_weights; i++ )
+            x[i] = 0;
+    }
+    else if ( !m_trainingOptions.continueTraining )
+    {
+        x = m_x;
+        for (size_t i = 0; i < N_weights; i++)
+            x[i] = 0;
+    }
+    else
+    {
+        x = m_x;
+    }
 
     //
     //  3. Configure the parameters of the optimization method.
@@ -922,11 +944,22 @@ int CTrainingDataSet::train( const bool debug )
     if ( m_trainingOptions.l2Regularization )
     {
         m_trainingOptions.lambda.resize(N_weights);
+        int lastNodeWeight;
 
-        Eigen::MatrixXi &lastNodeMapMatrix = m_nodeWeightsMap[m_nodeTypes[m_nodeTypes.size()-1]];
+        if ( m_nodeWeightsMap.empty() )
+        {
+            lastNodeWeight = -1;
+            DEBUG("No node weights, so nothing to regularize for them!")
+        }
+        else
+        {
 
-        size_t lastNodeWeight =
-                lastNodeMapMatrix(lastNodeMapMatrix.rows()-1,lastNodeMapMatrix.cols()-1);
+            Eigen::MatrixXi &lastNodeMapMatrix =
+                    m_nodeWeightsMap[m_nodeTypes[m_nodeTypes.size()-1]];
+
+            lastNodeWeight =
+                    lastNodeMapMatrix(lastNodeMapMatrix.rows()-1,lastNodeMapMatrix.cols()-1);
+        }
 
         for ( size_t i = 0; i < N_weights; i++ )
             if ( i <= lastNodeWeight )
@@ -1055,7 +1088,11 @@ int CTrainingDataSet::train( const bool debug )
         }
     }
 
-    lbfgs_free(x);
+    if (!m_trainingOptions.continueTraining)
+    {
+        lbfgs_free(m_x);
+        m_x = NULL;
+    }
 
     TIMER_END(m_executionTime)
 

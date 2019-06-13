@@ -95,6 +95,7 @@ namespace UPGMpp
             // Get unique ID            
             m_ID = setID();
 
+            m_label = label;
             m_nFeatures = N_features;
 
             size_t N_classes_1;
