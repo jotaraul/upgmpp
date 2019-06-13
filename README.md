@@ -29,7 +29,13 @@ This is a standalone C++ library for Undirected Probabilistic Graphical Models. 
 
 I want to thank Prof. Dr. Joachim Hertzberg and Mr. Martin Günther for the motivation and support that they gave me in the first steps of this library, which was started during my stay at the University of Osnabrück, Germany.
 
-Prerequisites
+In this guide:
+- [Prerequisities](#prerequisities)
+- [Compiling](#compiling)
+- [Installation](#installation)
+- [Known issues](#known_issues)
+
+<a name="prerequisities">Prerequisites</a>
 -------------
 
 Install dependencies:
@@ -49,12 +55,18 @@ Install dependencies:
         sudo dpkg -i liblbfgs0_1.10-5_amd64.deb liblbfgs-dev_1.10-5_amd64.deb
 
 
-Compiling
+<a name="compiling">Compiling</a>
 ---------
 
     mkdir build && cd build && cmake .. && make
 
-Installation
+<a name="installation">Installation</a>
 ------------
 
     sudo make install
+    
+<a name="known_issues">Known issues</a>
+------------
+
+At execution time:
+- If you selected the <code>ENABLE_OPTIMIZATION_FLAG</code> in CMake and your program crashes, it could be due to the <code>-march=native</code> flag. Try chaging its value ([check this](https://gcc.gnu.org/onlinedocs/gcc/x86-Options.html)) or removing it. 
