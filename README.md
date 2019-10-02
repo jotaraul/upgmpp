@@ -69,4 +69,4 @@ Install dependencies:
 ------------
 
 At execution time:
-- If you selected the <code>ENABLE_OPTIMIZATION_FLAG</code> in CMake and your program crashes, it could be due to the <code>-march=native</code> flag. Try chaging its value ([check this](https://gcc.gnu.org/onlinedocs/gcc/x86-Options.html)) or removing it. 
+- If you selected the <code>ENABLE_OPTIMIZATION_FLAG</code> in CMake and your program crashes, it could be due to the <code>-march=native</code> flag. Try chaging its value (e.g. <code>x86-64<code> [check this](https://gcc.gnu.org/onlinedocs/gcc/x86-Options.html)) or removing it. 
